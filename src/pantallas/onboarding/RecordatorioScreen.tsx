@@ -44,7 +44,7 @@ export const RecordatorioScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <ScreenContainer contentStyle={styles.content}>
       <View>
-        <StepDots total={3} current={2} />
+        <StepDots total={4} current={3} />
         <Text style={[typography.displayM, styles.title]}>{t('steps.notificationTitle')}</Text>
         <Text style={[typography.body, styles.subtitle]}>{t('steps.notificationSubtitle')}</Text>
 

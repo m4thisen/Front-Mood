@@ -37,6 +37,8 @@ const en: Record<string, string> = {
 
   'steps.blocksTitle': 'Pick your blocks',
   'steps.blocksSubtitle': "Choose the areas of your life you'd like to track. You can change this later.",
+  'steps.tagsTitle': 'Your own tags',
+  'steps.tagsSubtitle': 'Add anything you want to track that is not in the blocks, like "Sold a car". It is optional: you can do it later from Account.',
   'steps.notificationTitle': 'Your daily reminder',
   'steps.notificationSubtitle': "Choose what time you'd like to be reminded.",
   'steps.pickTime': 'Reminder time',
@@ -137,9 +139,11 @@ const en: Record<string, string> = {
 
   'tab.calendar': 'Calendar',
   'tab.stats': 'Stats',
+  'tab.howYouAre': 'Insights',
   'tab.today': 'Today',
   'tab.account': 'Account',
 
+  'howYouAre.title': "How you're doing",
   'calendar.title': "This month's sky",
   'calendar.soulColor': 'Soul color',
   'calendar.streak': 'Streak',

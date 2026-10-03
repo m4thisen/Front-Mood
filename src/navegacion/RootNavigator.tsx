@@ -7,6 +7,7 @@ import { MainTabNavigator } from './MainTabNavigator';
 import { BienvenidaScreen } from '@/pantallas/BienvenidaScreen';
 import { DatosBasicosScreen } from '@/pantallas/onboarding/DatosBasicosScreen';
 import { BloquesScreen } from '@/pantallas/onboarding/BloquesScreen';
+import { TagsScreen } from '@/pantallas/onboarding/TagsScreen';
 import { RecordatorioScreen } from '@/pantallas/onboarding/RecordatorioScreen';
 import { ColorDelAlmaScreen } from '@/pantallas/onboarding/ColorDelAlmaScreen';
 import { DetalleDiaScreen } from '@/pantallas/DetalleDiaScreen';
@@ -62,6 +63,7 @@ export const RootNavigator: React.FC = () => {
           <Stack.Group>
             <Stack.Screen name="DatosBasicos" component={DatosBasicosScreen} />
             <Stack.Screen name="Bloques" component={BloquesScreen} />
+            <Stack.Screen name="Tags" component={TagsScreen} />
             <Stack.Screen name="Recordatorio" component={RecordatorioScreen} />
             <Stack.Screen name="ColorDelAlma" component={ColorDelAlmaScreen} />
           </Stack.Group>

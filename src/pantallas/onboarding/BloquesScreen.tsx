@@ -32,12 +32,12 @@ export const BloquesScreen: React.FC<Props> = ({ navigation }) => {
   // ninguno (CU-04, flujo A): se cambian después desde Mi cuenta.
   const handleContinue = async () => {
     await actualizarPreferencias({ bloquesActivos: Array.from(selected) });
-    navigation.navigate('Recordatorio');
+    navigation.navigate('Tags');
   };
 
   return (
     <ScreenContainer scroll contentStyle={styles.content}>
-      <StepDots total={3} current={1} />
+      <StepDots total={4} current={1} />
       <Text style={[typography.displayM, styles.title]}>{t('steps.blocksTitle')}</Text>
       <Text style={[typography.body, styles.subtitle]}>{t('steps.blocksSubtitle')}</Text>
 

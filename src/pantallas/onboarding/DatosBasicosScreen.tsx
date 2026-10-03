@@ -47,7 +47,7 @@ export const DatosBasicosScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <ScreenContainer scroll contentStyle={styles.content}>
-      <StepDots total={3} current={0} />
+      <StepDots total={4} current={0} />
       <Text style={[typography.displayM, styles.title]}>{t('register.title')}</Text>
       <Text style={[typography.body, styles.subtitle]}>{t('register.subtitle')}</Text>
 

@@ -5,9 +5,6 @@ import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { HeatmapCalendar } from '@/componentes/HeatmapCalendar';
 import { SoulOrb } from '@/componentes/SoulOrb';
 import { Card } from '@/componentes/Card';
-import { AiSummaryCard } from '@/componentes/AiSummaryCard';
-import { PlaylistRecommendationCard } from '@/componentes/PlaylistRecommendationCard';
-import { HabitRecommendationCard } from '@/componentes/HabitRecommendationCard';
 import { colors, spacing, typography, TAB_BAR_CLEARANCE } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { CoachMark } from '@/componentes/CoachMark';
@@ -78,9 +75,6 @@ export const InicioScreen: React.FC = () => {
         />
       </Card>
 
-      <AiSummaryCard />
-      <PlaylistRecommendationCard />
-      <HabitRecommendationCard />
       <CoachMark
         message={t('coach.todayStep')}
         step="1/1"

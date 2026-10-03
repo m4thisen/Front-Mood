@@ -37,6 +37,8 @@ const es: Record<string, string> = {
 
   'steps.blocksTitle': 'Elegí tus bloques',
   'steps.blocksSubtitle': 'Seleccioná las áreas de tu vida que querés registrar. Podés cambiarlo después.',
+  'steps.tagsTitle': 'Tus propios tags',
+  'steps.tagsSubtitle': 'Sumá lo que quieras seguir y no está en los bloques, por ejemplo "Vendí un auto". Es opcional: podés hacerlo después desde Mi cuenta.',
   'steps.notificationTitle': 'Tu recordatorio diario',
   'steps.notificationSubtitle': 'Elegí a qué hora te gustaría que te lo recordemos.',
   'steps.pickTime': 'Hora del recordatorio',
@@ -137,9 +139,11 @@ const es: Record<string, string> = {
 
   'tab.calendar': 'Calendario',
   'tab.stats': 'Estadísticas',
+  'tab.howYouAre': 'Cómo venís',
   'tab.today': 'Hoy',
   'tab.account': 'Mi cuenta',
 
+  'howYouAre.title': 'Cómo venís',
   'calendar.title': 'Tu estado del mes',
   'calendar.soulColor': 'Color del alma',
   'calendar.streak': 'Racha',

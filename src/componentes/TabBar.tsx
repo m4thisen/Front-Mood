@@ -9,6 +9,7 @@ import { useTranslation } from '@/i18n';
 const ICONS: Record<string, string> = {
   Inicio: '🌙',
   Estadisticas: '✦',
+  ComoVenis: '✧',
   Cuenta: '◐',
   Registro: '＋',
 };
@@ -16,6 +17,7 @@ const ICONS: Record<string, string> = {
 const LABEL_KEYS: Record<string, string> = {
   Inicio: 'tab.calendar',
   Estadisticas: 'tab.stats',
+  ComoVenis: 'tab.howYouAre',
   Cuenta: 'tab.account',
   Registro: 'tab.today',
 };

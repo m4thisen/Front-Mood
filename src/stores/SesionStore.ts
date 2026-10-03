@@ -17,6 +17,7 @@ import {
 } from '@/dominio';
 import * as UsuarioLocal from '@/persistencia/UsuarioLocalRepository';
 import { useRegistroStore } from './RegistroStore';
+import { cargarCuentaDemo } from '@/datos/demo';
 
 type CambiosPreferencias = Partial<Omit<Usuario, 'id'>>;
 
@@ -33,6 +34,8 @@ interface EstadoSesion {
   /** Eliminar un tag lo desactiva: sus valores históricos se conservan. */
   desactivarTag: (id: string) => Promise<void>;
   cerrarSesion: () => Promise<void>;
+  /** Solo en desarrollo: entra con la cuenta de demostración. */
+  entrarConCuentaDemo: (idioma: Idioma) => Promise<void>;
 }
 
 export const useSesionStore = create<EstadoSesion>((set, get) => ({
@@ -95,6 +98,11 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
     await UsuarioLocal.guardarSesionActiva(null);
     useRegistroStore.getState().limpiar();
     set({ usuario: null, tags: [] });
+  },
+
+  entrarConCuentaDemo: async (idioma) => {
+    await cargarCuentaDemo(idioma);
+    await get().cargar();
   },
 }));
 

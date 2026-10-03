@@ -5,6 +5,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { GlowButton } from '@/componentes/GlowButton';
 import { SoulOrb } from '@/componentes/SoulOrb';
+import { Boton } from '@/componentes/Boton';
 import { colors, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { useSesionStore } from '@/stores/SesionStore';
@@ -16,6 +17,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Bienvenida'>;
 export const BienvenidaScreen: React.FC<Props> = () => {
   const { t, language, setLanguage } = useTranslation();
   const iniciarSesion = useSesionStore((s) => s.iniciarSesion);
+  const entrarConCuentaDemo = useSesionStore((s) => s.entrarConCuentaDemo);
 
   // Crear cuenta e iniciar sesión usan un único endpoint (POST /auth/google):
   // el servidor decide si crea o si entra. El flujo con Google se conecta en
@@ -72,6 +74,9 @@ export const BienvenidaScreen: React.FC<Props> = () => {
           variant="ghost"
           style={styles.spaced}
         />
+        {__DEV__ && (
+          <Boton titulo="Cuenta demo (desarrollo)" variante="texto" onPress={() => entrarConCuentaDemo(language)} />
+        )}
       </Animated.View>
     </ScreenContainer>
   );

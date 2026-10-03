@@ -2,129 +2,162 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radius, shadow, spacing, typography } from '@/tema';
+import { BlurView } from 'expo-blur';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { Icono, NombreIcono } from './Icono';
+import { colors, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
+import { useRegistroDeHoy } from '@/stores/RegistroStore';
+import { hapticos } from '@/utils/hapticos';
 
-const ICONS: Record<string, string> = {
-  Inicio: '🌙',
-  Estadisticas: '✦',
-  ComoVenis: '✧',
-  Cuenta: '◐',
-  Registro: '＋',
+const PESTANAS: Record<string, { icono: NombreIcono; etiqueta: string }> = {
+  Inicio: { icono: 'calendario', etiqueta: 'tab.calendar' },
+  Estadisticas: { icono: 'estadisticas', etiqueta: 'tab.stats' },
+  ComoVenis: { icono: 'comoVenis', etiqueta: 'tab.howYouAre' },
+  Cuenta: { icono: 'cuenta', etiqueta: 'tab.account' },
 };
 
-const LABEL_KEYS: Record<string, string> = {
-  Inicio: 'tab.calendar',
-  Estadisticas: 'tab.stats',
-  ComoVenis: 'tab.howYouAre',
-  Cuenta: 'tab.account',
-  Registro: 'tab.today',
-};
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
- * Tab bar flotante. "Today" (subir tu día) va siempre última, a la derecha
- * de todo, marcada con una insignia glossy en degradé para que se note que
- * es la acción principal — pero dentro de la misma fila, sin superponerse.
+ * Barra inferior al estilo iOS: una cápsula flotante con desenfoque para las
+ * secciones y, aparte, el botón circular de "Hoy" — la acción principal de
+ * la app. El botón muestra un + mientras el día está pendiente y un ✓ cuando
+ * ya se registró.
  */
 export const TabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const registroDeHoy = useRegistroDeHoy();
+  const escalaHoy = useSharedValue(1);
+  const estiloHoy = useAnimatedStyle(() => ({ transform: [{ scale: escalaHoy.value }] }));
+
+  const ir = (nombre: string, enfocada: boolean) => {
+    if (enfocada) return;
+    hapticos.seleccion();
+    navigation.navigate(nombre);
+  };
+
+  const rutaHoy = state.routes.find((r) => r.name === 'Registro');
+  const hoyEnfocada = state.routes[state.index]?.name === 'Registro';
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
-      <View style={styles.bar}>
-        {state.routes.map((route, index) => {
-          const focused = state.index === index;
-          const isToday = route.name === 'Registro';
-
-          const onPress = () => {
-            if (!focused) navigation.navigate(route.name);
-          };
-
-          if (isToday) {
+    <View style={[styles.envoltorio, { paddingBottom: Math.max(insets.bottom - 6, spacing.md) }]} pointerEvents="box-none">
+      <View style={styles.capsula}>
+        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={styles.velo} />
+        {state.routes
+          .filter((r) => r.name !== 'Registro')
+          .map((ruta) => {
+            const enfocada = state.routes[state.index]?.key === ruta.key;
+            const pestana = PESTANAS[ruta.name];
+            const color = enfocada ? colors.textPrimary : colors.textTertiary;
             return (
-              <Pressable key={route.key} onPress={onPress} style={styles.tabButton}>
-                <LinearGradient
-                  colors={[colors.accent, colors.accentStrong]}
-                  start={{ x: 0.2, y: 0 }}
-                  end={{ x: 0.9, y: 1 }}
-                  style={[styles.todayBadge, shadow.glow(colors.accent)]}
-                >
-                  <Text style={styles.todayIcon}>{ICONS[route.name]}</Text>
-                </LinearGradient>
-                <Text style={[typography.micro, styles.label, focused && styles.labelActive]}>
-                  {t(LABEL_KEYS[route.name])}
+              <Pressable
+                key={ruta.key}
+                onPress={() => ir(ruta.name, enfocada)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: enfocada }}
+                accessibilityLabel={t(pestana.etiqueta)}
+                style={styles.pestana}
+              >
+                <View style={[styles.fondoActivo, enfocada && styles.fondoActivoVisible]} />
+                <Icono nombre={pestana.icono} tamano={21} color={color} relleno={enfocada} />
+                <Text style={[typography.micro, styles.etiqueta, { color }]} numberOfLines={1}>
+                  {t(pestana.etiqueta)}
                 </Text>
               </Pressable>
             );
-          }
-
-          return (
-            <Pressable key={route.key} onPress={onPress} style={styles.tabButton}>
-              <Text style={[styles.icon, focused && styles.iconActive]}>{ICONS[route.name]}</Text>
-              <Text style={[typography.micro, styles.label, focused && styles.labelActive]}>
-                {t(LABEL_KEYS[route.name])}
-              </Text>
-            </Pressable>
-          );
-        })}
+          })}
       </View>
+
+      {rutaHoy && (
+        <AnimatedPressable
+          onPress={() => {
+            hapticos.toque();
+            if (!hoyEnfocada) navigation.navigate(rutaHoy.name);
+          }}
+          onPressIn={() => (escalaHoy.value = withSpring(0.92, { damping: 18, stiffness: 400 }))}
+          onPressOut={() => (escalaHoy.value = withSpring(1, { damping: 12, stiffness: 260 }))}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: hoyEnfocada }}
+          accessibilityLabel={t('tab.today')}
+          style={[styles.botonHoy, registroDeHoy && styles.botonHoyListo, estiloHoy]}
+        >
+          <Icono
+            nombre={registroDeHoy ? 'check' : 'agregar'}
+            tamano={24}
+            color={registroDeHoy ? colors.accentStrong : colors.background}
+            peso="bold"
+          />
+        </AnimatedPressable>
+      )}
     </View>
   );
 };
 
+const ALTO = 64;
+
 const styles = StyleSheet.create({
-  wrapper: {
+  envoltorio: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginHorizontal: spacing.xl,
-    ...shadow.soft,
+    paddingHorizontal: spacing.lg,
+    gap: 10,
   },
-  tabButton: {
+  capsula: {
     flex: 1,
+    height: ALTO,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.xs,
+    borderRadius: ALTO / 2,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    paddingHorizontal: 6,
   },
-  icon: {
-    fontSize: 18,
-    color: colors.textTertiary,
-    marginBottom: 2,
+  velo: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(22, 26, 40, 0.62)',
   },
-  iconActive: {
-    color: colors.accent,
-  },
-  label: {
-    color: colors.textTertiary,
-  },
-  labelActive: {
-    color: colors.textPrimary,
-  },
-  todayBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  pestana: {
+    flex: 1,
+    height: ALTO - 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
+    gap: 3,
   },
-  todayIcon: {
-    fontSize: 15,
-    color: colors.background,
-    fontWeight: '700',
+  fondoActivo: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: (ALTO - 12) / 2,
+  },
+  fondoActivoVisible: {
+    backgroundColor: colors.fillStrong,
+  },
+  etiqueta: {
+    fontSize: 10,
+    letterSpacing: 0.1,
+  },
+  botonHoy: {
+    width: ALTO,
+    height: ALTO,
+    borderRadius: ALTO / 2,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.accent,
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  botonHoyListo: {
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    shadowOpacity: 0,
   },
 });

@@ -41,6 +41,11 @@ export const colors = {
   danger: '#FF4D5E',
 
   overlay: 'rgba(3, 6, 16, 0.78)',
+
+  // Rellenos neutros para controles (equivalentes a los "fills" de iOS)
+  fill: 'rgba(210, 214, 230, 0.06)',
+  fillStrong: 'rgba(210, 214, 230, 0.11)',
+  separator: 'rgba(210, 214, 230, 0.09)',
 } as const;
 
 /**

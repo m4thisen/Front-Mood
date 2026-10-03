@@ -21,7 +21,7 @@ const BackgroundGradient: React.FC = () => (
     colors={[colors.backgroundAlt, colors.background, '#020510']}
     start={{ x: 0.15, y: 0 }}
     end={{ x: 0.9, y: 1 }}
-    style={StyleSheet.absoluteFillObject}
+    style={StyleSheet.absoluteFill}
   />
 );
 

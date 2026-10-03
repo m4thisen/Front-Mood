@@ -122,7 +122,7 @@ export const HeatmapCalendar: React.FC<Props> = ({
                       colors={[shade(color, 0.3), color, shade(color, -0.3)]}
                       start={{ x: 0.2, y: 0 }}
                       end={{ x: 0.85, y: 1 }}
-                      style={StyleSheet.absoluteFillObject}
+                      style={StyleSheet.absoluteFill}
                     />
                   )}
                   <Text

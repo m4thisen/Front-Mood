@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import { EntriesByDate, UserProfile } from '@/types/models';
@@ -37,10 +37,11 @@ function buildCsv(entries: EntriesByDate): string {
 
 export async function exportEntriesAsCsv(entries: EntriesByDate): Promise<void> {
   const csv = buildCsv(entries);
-  const path = `${FileSystem.cacheDirectory}mood-export-${Date.now()}.csv`;
-  await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
+  const file = new File(Paths.cache, `mood-export-${Date.now()}.csv`);
+  file.create({ overwrite: true });
+  file.write(csv);
   if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: 'Mood — export' });
+    await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: 'Mood — export' });
   }
 }
 

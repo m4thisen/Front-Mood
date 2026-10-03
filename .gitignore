@@ -6,3 +6,8 @@ web-build/
 .DS_Store
 ios/
 android/
+
+# Variables de entorno locales
+.env
+.env.*
+!.env.example

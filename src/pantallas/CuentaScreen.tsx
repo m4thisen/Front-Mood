@@ -1,19 +1,38 @@
 import React, { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import Constants from 'expo-constants';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
-import { Card } from '@/componentes/Card';
-import { GlowButton } from '@/componentes/GlowButton';
-import { BlockChip } from '@/componentes/BlockChip';
+import { EncabezadoPantalla, EncabezadoSeccion } from '@/componentes/Encabezados';
+import { FilaLista, GrupoLista } from '@/componentes/Lista';
+import { HojaInferior } from '@/componentes/HojaInferior';
 import { EditorTags } from '@/componentes/EditorTags';
-import { colors, spacing, typography, TAB_BAR_CLEARANCE } from '@/tema';
+import { Chip } from '@/componentes/Chip';
+import { Boton } from '@/componentes/Boton';
+import { Icono } from '@/componentes/Icono';
+import { iconoDeBloque } from '@/componentes/iconosDominio';
+import { useAltoBarraInferior } from '@/componentes/TabBar';
+import { colors, radius, spacing, typography } from '@/tema';
+import { shade } from '@/utils/color';
+import { hapticos } from '@/utils/hapticos';
 import { useTranslation } from '@/i18n';
-import { useSesionStore } from '@/stores/SesionStore';
+import { useSesionStore, useTagsActivos } from '@/stores/SesionStore';
 import { useIndicadoresProgreso, useListaRegistros } from '@/stores/RegistroStore';
 import { exportarCSV, exportarPDF } from '@/servicios/ExportService';
 import { programarRecordatorio } from '@/servicios/NotificacionService';
 import { BLOQUES, claveTraduccionBloque } from '@/datos/catalogoBloques';
-import { formatearHora, HORA_RECORDATORIO_POR_DEFECTO, Idioma, partesHora } from '@/dominio';
+import {
+  calcularEdad,
+  FRECUENCIAS_IA,
+  FrecuenciaIA,
+  formatearHora,
+  HORA_RECORDATORIO_POR_DEFECTO,
+  Idioma,
+  partesHora,
+} from '@/dominio';
+
+type Hoja = 'recordatorio' | 'frecuencia' | 'bloques' | 'tags' | null;
 
 const aFecha = (horaTexto: string): Date => {
   const { hora, minuto } = partesHora(horaTexto);
@@ -22,27 +41,52 @@ const aFecha = (horaTexto: string): Date => {
   return d;
 };
 
+/**
+ * Mi cuenta (CU-03, CU-05 a CU-08, CU-22 y CU-23), al estilo de Ajustes de
+ * iOS: listas agrupadas y cada preferencia se edita en una hoja inferior.
+ */
 export const CuentaScreen: React.FC = () => {
   const { t, language, setLanguage } = useTranslation();
+  const altoBarra = useAltoBarraInferior();
   const usuario = useSesionStore((s) => s.usuario);
   const tags = useSesionStore((s) => s.tags);
+  const tagsActivos = useTagsActivos();
   const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
   const cerrarSesion = useSesionStore((s) => s.cerrarSesion);
   const registros = useListaRegistros();
-  const { rachaActual, diasRegistrados } = useIndicadoresProgreso();
+  const { diasRegistrados, colorDelAlma } = useIndicadoresProgreso();
 
+  const [hoja, setHoja] = useState<Hoja>(null);
   const horaRecordatorio = usuario?.horaRecordatorio ?? HORA_RECORDATORIO_POR_DEFECTO;
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [draftTime, setDraftTime] = useState(aFecha(horaRecordatorio));
+  const [horaBorrador, setHoraBorrador] = useState(aFecha(horaRecordatorio));
 
-  const changeLanguage = (idioma: Idioma) => {
+  const cambiarIdioma = (idioma: Idioma) => {
+    hapticos.seleccion();
     setLanguage(idioma);
     actualizarPreferencias({ idioma });
   };
 
+  const abrirRecordatorio = () => {
+    setHoraBorrador(aFecha(horaRecordatorio));
+    setHoja('recordatorio');
+  };
+
+  const guardarRecordatorio = async () => {
+    const hora = formatearHora(horaBorrador.getHours(), horaBorrador.getMinutes());
+    await actualizarPreferencias({ horaRecordatorio: hora });
+    setHoja(null);
+    const programado = await programarRecordatorio(hora, t('appName'), t('welcome.description'));
+    if (!programado) Alert.alert(t('steps.notificationDeniedTitle'), t('steps.notificationDeniedBody'));
+  };
+
+  const elegirFrecuencia = (frecuenciaIA: FrecuenciaIA) => {
+    hapticos.seleccion();
+    actualizarPreferencias({ frecuenciaIA });
+  };
+
   // CU-07: desactivar un bloque no borra lo ya registrado; si quedan todos
   // desactivados, se advierte que el registro queda reducido (excepción E1).
-  const toggleBloque = (clave: string) => {
+  const alternarBloque = (clave: string) => {
     const activos = usuario?.bloquesActivos ?? [];
     const siguiente = activos.includes(clave) ? activos.filter((c) => c !== clave) : [...activos, clave];
     if (siguiente.length === 0) {
@@ -55,153 +99,177 @@ export const CuentaScreen: React.FC = () => {
     actualizarPreferencias({ bloquesActivos: siguiente });
   };
 
-  const handleExportCsv = () => exportarCSV(registros, tags);
-  const handleExportPdf = () => exportarPDF(registros, usuario, tags);
-
-  const openTimeEditor = () => {
-    setDraftTime(aFecha(horaRecordatorio));
-    setShowTimePicker(true);
-  };
-
-  const handleTimeChange = (event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'android') setShowTimePicker(false);
-    if (event.type === 'dismissed') return;
-    if (selected) setDraftTime(selected);
-  };
-
-  const handleSaveTime = async () => {
-    const hora = formatearHora(draftTime.getHours(), draftTime.getMinutes());
-    await actualizarPreferencias({ horaRecordatorio: hora });
-    const programado = await programarRecordatorio(hora, t('appName'), t('welcome.description'));
-    if (!programado) Alert.alert(t('steps.notificationDeniedTitle'), t('steps.notificationDeniedBody'));
-    setShowTimePicker(false);
+  const exportar = async (formato: 'csv' | 'pdf') => {
+    if (registros.length === 0) {
+      Alert.alert(t('account.exportData'), t('account.exportEmpty'));
+      return;
+    }
+    if (formato === 'csv') await exportarCSV(registros, tags);
+    else await exportarPDF(registros, usuario, tags);
   };
 
   // CU-03: se pide confirmación y se avisa que los datos locales se conservan.
-  const handleLogout = () => {
+  const confirmarCierre = () => {
     Alert.alert(t('account.logout'), t('account.logoutConfirm'), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('account.logout'), style: 'destructive', onPress: cerrarSesion },
     ]);
   };
 
+  const frecuencia = usuario?.frecuenciaIA ?? 1;
+  const textoFrecuencia = (f: FrecuenciaIA) =>
+    f === 1 ? t('account.frequencyDaily') : t('account.frequencyEvery').replace('{dias}', String(f));
+  const edad = usuario?.fechaNacimiento ? calcularEdad(usuario.fechaNacimiento) : null;
+  const colorAvatar = colorDelAlma ?? colors.accent;
+
   return (
-    <ScreenContainer scroll contentStyle={styles.content}>
-      <Text style={[typography.displayM, styles.header]}>{t('account.title')}</Text>
+    <ScreenContainer scroll contentStyle={[styles.content, { paddingBottom: altoBarra + spacing.xl }]}>
+      <EncabezadoPantalla titulo={t('account.title')} />
 
-      <Card style={styles.profileCard} elevated>
-        <View style={styles.profileRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{usuario?.nombre?.[0]?.toUpperCase() ?? '?'}</Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={[typography.title, styles.name]}>{usuario?.nombre}</Text>
-          </View>
-        </View>
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={[typography.title, styles.statValue]}>{rachaActual}</Text>
-            <Text style={[typography.caption, styles.statLabel]}>{t('account.streak')}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={[typography.title, styles.statValue]}>{diasRegistrados}</Text>
-            <Text style={[typography.caption, styles.statLabel]}>{t('account.totalEntries')}</Text>
-          </View>
-        </View>
-      </Card>
-
-      <Card style={styles.card}>
-        <Text style={[typography.subtitle, styles.cardTitle]}>{t('account.language')}</Text>
-        <View style={styles.chipsRow}>
-          {(['es', 'en'] as const).map((lang) => (
-            <BlockChip
-              key={lang}
-              label={lang === 'es' ? 'Español' : 'English'}
-              selected={language === lang}
-              onPress={() => changeLanguage(lang)}
-            />
-          ))}
-        </View>
-      </Card>
-
-      <Card style={styles.card}>
-        <View style={styles.notificationHeader}>
-          <Text style={[typography.subtitle, styles.cardTitle]}>{t('account.notificationTime')}</Text>
-          {!showTimePicker && (
-            <Pressable onPress={openTimeEditor}>
-              <Text style={[typography.bodyMedium, styles.editLink]}>
-                {t('account.editNotificationTime')}
-              </Text>
-            </Pressable>
-          )}
-        </View>
-
-        {!showTimePicker ? (
-          <Text style={[typography.displayM, styles.notificationTime]}>
-            {horaRecordatorio}
+      <View style={styles.perfil}>
+        <LinearGradient
+          colors={[shade(colorAvatar, 0.3), colorAvatar, shade(colorAvatar, -0.35)]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={styles.avatar}
+        >
+          <Text style={styles.inicial}>{usuario?.nombre?.[0]?.toUpperCase() ?? '?'}</Text>
+        </LinearGradient>
+        <View style={styles.datosPerfil}>
+          <Text style={[typography.title, styles.nombre]}>{usuario?.nombre}</Text>
+          <Text style={[typography.footnote, styles.detallePerfil]}>
+            {[edad !== null ? t('account.age').replace('{edad}', String(edad)) : null,
+              t('account.loggedDays').replace('{dias}', String(diasRegistrados))]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
-        ) : (
-          <View>
-            <View style={styles.pickerCard}>
-              <DateTimePicker
-                value={draftTime}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleTimeChange}
-                themeVariant="dark"
-                is24Hour
-              />
-            </View>
-            <GlowButton
-              label={t('account.saveNotificationTime')}
-              onPress={handleSaveTime}
-              variant="secondary"
-              style={{ marginTop: spacing.sm }}
-            />
-          </View>
-        )}
-      </Card>
+        </View>
+      </View>
 
-      <Card style={styles.card}>
-        <Text style={[typography.subtitle, styles.cardTitle]}>{t('account.blocks')}</Text>
-        <View style={styles.chipsRow}>
+      <EncabezadoSeccion titulo={t('account.settings')} />
+      <GrupoLista>
+        <FilaLista
+          icono="idioma"
+          colorIcono="#5B8CFF"
+          titulo={t('account.language')}
+          accesorio={
+            <View style={styles.segmentado}>
+              {(['es', 'en'] as const).map((idioma) => (
+                <Pressable
+                  key={idioma}
+                  onPress={() => cambiarIdioma(idioma)}
+                  style={[styles.segmento, language === idioma && styles.segmentoActivo]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: language === idioma }}
+                >
+                  <Text
+                    style={[typography.footnote, { color: language === idioma ? colors.textPrimary : colors.textTertiary }]}
+                  >
+                    {idioma.toUpperCase()}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          }
+        />
+        <FilaLista
+          icono="recordatorio"
+          colorIcono="#F2547D"
+          titulo={t('account.notificationTime')}
+          valor={horaRecordatorio}
+          onPress={abrirRecordatorio}
+        />
+        <FilaLista
+          icono="ia"
+          colorIcono="#7C6CF2"
+          titulo={t('account.aiFrequencyRow')}
+          valor={textoFrecuencia(frecuencia)}
+          onPress={() => setHoja('frecuencia')}
+        />
+      </GrupoLista>
+
+      <EncabezadoSeccion titulo={t('account.yourLog')} />
+      <GrupoLista>
+        <FilaLista
+          icono="bloques"
+          colorIcono="#34C77B"
+          titulo={t('account.blocks')}
+          valor={t('account.activeCount').replace('{n}', String(usuario?.bloquesActivos.length ?? 0))}
+          onPress={() => setHoja('bloques')}
+        />
+        <FilaLista
+          icono="tag"
+          colorIcono="#F5A524"
+          titulo={t('account.customTags')}
+          valor={String(tagsActivos.length)}
+          onPress={() => setHoja('tags')}
+        />
+      </GrupoLista>
+
+      <EncabezadoSeccion titulo={t('account.exportData')} />
+      <GrupoLista>
+        <FilaLista icono="tabla" colorIcono="#2BB3A3" titulo={t('account.exportCsv')} onPress={() => exportar('csv')} />
+        <FilaLista icono="documento" colorIcono="#2BB3A3" titulo={t('account.exportPdf')} onPress={() => exportar('pdf')} />
+      </GrupoLista>
+      <Text style={[typography.micro, styles.nota]}>{t('account.exportDataDesc')}</Text>
+
+      <GrupoLista style={styles.grupoSalir}>
+        <FilaLista icono="cerrarSesion" titulo={t('account.logout')} onPress={confirmarCierre} destructiva />
+      </GrupoLista>
+
+      <Text style={[typography.micro, styles.version]}>
+        Mood {Constants.expoConfig?.version ?? ''}
+      </Text>
+
+      <HojaInferior
+        visible={hoja === 'recordatorio'}
+        titulo={t('account.notificationTime')}
+        onCerrar={() => setHoja(null)}
+        pie={<Boton titulo={t('account.saveNotificationTime')} onPress={guardarRecordatorio} />}
+      >
+        <DateTimePicker
+          value={horaBorrador}
+          mode="time"
+          display="spinner"
+          onChange={(_e: DateTimePickerEvent, fecha?: Date) => fecha && setHoraBorrador(fecha)}
+          themeVariant="dark"
+          is24Hour
+        />
+      </HojaInferior>
+
+      <HojaInferior visible={hoja === 'frecuencia'} titulo={t('account.aiFrequency')} onCerrar={() => setHoja(null)}>
+        <Text style={[typography.footnote, styles.explicacion]}>{t('account.aiFrequencyDesc')}</Text>
+        <GrupoLista sinIconos>
+          {FRECUENCIAS_IA.map((f) => (
+            <FilaLista
+              key={f}
+              titulo={textoFrecuencia(f)}
+              onPress={() => elegirFrecuencia(f)}
+              chevron={false}
+              accesorio={f === frecuencia ? <Icono nombre="check" tamano={16} color={colors.accentStrong} peso="bold" /> : <View />}
+            />
+          ))}
+        </GrupoLista>
+      </HojaInferior>
+
+      <HojaInferior visible={hoja === 'bloques'} titulo={t('account.blocks')} onCerrar={() => setHoja(null)}>
+        <Text style={[typography.footnote, styles.explicacion]}>{t('account.blocksDesc')}</Text>
+        <View style={styles.chips}>
           {BLOQUES.map((bloque) => (
-            <BlockChip
+            <Chip
               key={bloque.clave}
-              icon={bloque.icono}
-              label={t(claveTraduccionBloque(bloque.clave))}
-              selected={usuario?.bloquesActivos.includes(bloque.clave) ?? false}
-              onPress={() => toggleBloque(bloque.clave)}
+              icono={iconoDeBloque(bloque.clave)}
+              etiqueta={t(claveTraduccionBloque(bloque.clave))}
+              seleccionado={usuario?.bloquesActivos.includes(bloque.clave) ?? false}
+              onPress={() => alternarBloque(bloque.clave)}
             />
           ))}
         </View>
-      </Card>
+      </HojaInferior>
 
-      <Card style={styles.card}>
-        <Text style={[typography.subtitle, styles.cardTitle]}>{t('account.customTags')}</Text>
+      <HojaInferior visible={hoja === 'tags'} titulo={t('account.customTags')} onCerrar={() => setHoja(null)}>
         <EditorTags />
-      </Card>
-
-      <Card style={styles.card}>
-        <Text style={[typography.subtitle, styles.cardTitle]}>{t('account.exportData')}</Text>
-        <Text style={[typography.caption, styles.cardDesc]}>{t('account.exportDataDesc')}</Text>
-        <View style={styles.exportRow}>
-          <GlowButton
-            label={t('account.exportCsv')}
-            onPress={handleExportCsv}
-            variant="secondary"
-            style={styles.exportButton}
-          />
-          <GlowButton
-            label={t('account.exportPdf')}
-            onPress={handleExportPdf}
-            variant="secondary"
-            style={styles.exportButton}
-          />
-        </View>
-      </Card>
-
-      <GlowButton label={t('account.logout')} onPress={handleLogout} variant="ghost" />
+      </HojaInferior>
     </ScreenContainer>
   );
 };
@@ -209,98 +277,74 @@ export const CuentaScreen: React.FC = () => {
 const styles = StyleSheet.create({
   content: {
     paddingTop: spacing.lg,
-    paddingBottom: TAB_BAR_CLEARANCE,
   },
-  header: {
-    color: colors.textPrimary,
-    marginBottom: spacing.lg,
-  },
-  profileCard: {
-    marginBottom: spacing.md,
-  },
-  profileRow: {
+  perfil: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    padding: spacing.lg,
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.accentSoft,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.accent,
   },
-  avatarInitial: {
-    color: colors.accent,
-    fontFamily: 'Manrope_700Bold',
-    fontSize: 20,
+  inicial: {
+    color: 'rgba(5, 11, 30, 0.8)',
+    fontFamily: 'Fraunces_500Medium',
+    fontSize: 26,
   },
-  profileInfo: {
-    marginLeft: spacing.md,
+  datosPerfil: {
+    flex: 1,
   },
-  name: {
+  nombre: {
     color: colors.textPrimary,
   },
-  statsRow: {
-    flexDirection: 'row',
-    marginTop: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.md,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    color: colors.accent,
-  },
-  statLabel: {
-    color: colors.textSecondary,
+  detallePerfil: {
+    color: colors.textTertiary,
     marginTop: 2,
   },
-  card: {
-    marginBottom: spacing.md,
+  segmentado: {
+    flexDirection: 'row',
+    backgroundColor: colors.fill,
+    borderRadius: radius.pill,
+    padding: 2,
   },
-  cardTitle: {
-    color: colors.textPrimary,
+  segmento: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
   },
-  cardDesc: {
+  segmentoActivo: {
+    backgroundColor: colors.surfaceElevatedAlt,
+  },
+  nota: {
     color: colors.textTertiary,
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
-  chipsRow: {
+  grupoSalir: {
+    marginTop: spacing.xl,
+  },
+  version: {
+    color: colors.textTertiary,
+    textAlign: 'center',
+    marginTop: spacing.lg,
+  },
+  explicacion: {
+    color: colors.textSecondary,
+    marginBottom: spacing.lg,
+  },
+  chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: spacing.sm,
-  },
-  notificationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  editLink: {
-    color: colors.accent,
-  },
-  notificationTime: {
-    color: colors.accent,
-    marginTop: spacing.sm,
-  },
-  pickerCard: {
-    backgroundColor: colors.surfaceElevatedAlt,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  exportRow: {
-    flexDirection: 'row',
-  },
-  exportButton: {
-    flex: 1,
-    marginRight: spacing.sm,
+    gap: spacing.sm,
+    paddingBottom: spacing.md,
   },
 });

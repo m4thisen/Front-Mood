@@ -7,16 +7,18 @@ import { colors, radius, spacing, typography } from '@/tema';
  * Lista agrupada al estilo de Ajustes de iOS: filas dentro de una tarjeta,
  * separadas por una línea fina que empieza después del ícono.
  */
-export const GrupoLista: React.FC<{ children: React.ReactNode; style?: StyleProp<ViewStyle> }> = ({
-  children,
-  style,
-}) => {
+export const GrupoLista: React.FC<{
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+  /** Si las filas no tienen ícono, la línea separadora empieza en el borde. */
+  sinIconos?: boolean;
+}> = ({ children, style, sinIconos = false }) => {
   const filas = React.Children.toArray(children).filter(Boolean);
   return (
     <View style={[styles.grupo, style]}>
       {filas.map((fila, i) => (
         <React.Fragment key={i}>
-          {i > 0 && <View style={styles.separador} />}
+          {i > 0 && <View style={[styles.separador, sinIconos && styles.separadorSinIcono]} />}
           {fila}
         </React.Fragment>
       ))}
@@ -34,6 +36,8 @@ interface PropsFila {
   destructiva?: boolean;
   /** Contenido a la derecha en lugar del valor (un switch, un selector…). */
   accesorio?: React.ReactNode;
+  /** Chevron de navegación. Por defecto aparece en las filas tocables. */
+  chevron?: boolean;
 }
 
 export const FilaLista: React.FC<PropsFila> = ({
@@ -44,6 +48,7 @@ export const FilaLista: React.FC<PropsFila> = ({
   onPress,
   destructiva = false,
   accesorio,
+  chevron,
 }) => {
   const contenido = (
     <>
@@ -56,7 +61,7 @@ export const FilaLista: React.FC<PropsFila> = ({
         {titulo}
       </Text>
       {accesorio ?? (valor ? <Text style={[typography.bodyMedium, styles.valor]} numberOfLines={1}>{valor}</Text> : null)}
-      {onPress && !destructiva && <Icono nombre="adelante" tamano={13} color={colors.textTertiary} peso="semibold" />}
+      {(chevron ?? (!!onPress && !destructiva)) && <Icono nombre="adelante" tamano={13} color={colors.textTertiary} peso="semibold" />}
     </>
   );
 
@@ -85,6 +90,9 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.separator,
     marginLeft: spacing.lg + 28 + spacing.md,
+  },
+  separadorSinIcono: {
+    marginLeft: spacing.lg,
   },
   fila: {
     flexDirection: 'row',

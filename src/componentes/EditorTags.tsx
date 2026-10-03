@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { BlockChip } from './BlockChip';
-import { GlowButton } from './GlowButton';
+import { Chip } from './Chip';
+import { Boton } from './Boton';
+import { Icono } from './Icono';
 import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { useSesionStore, useTagsActivos } from '@/stores/SesionStore';
@@ -47,10 +48,12 @@ export const EditorTags: React.FC = () => {
         <View style={styles.chipsRow}>
           {tags.map((tag) => (
             <Pressable key={tag.id} onPress={() => confirmarEliminacion(tag)} style={styles.removableTag}>
-              <Text style={[typography.bodyMedium, styles.removableTagText]}>
+              <Icono nombre="tag" tamano={13} color={colors.textTertiary} />
+              <Text style={[typography.footnote, styles.removableTagText]}>
                 {tag.nombre}
-                {tag.tipo === 'TEXTO' ? ` · ${t('tags.typeText')}` : ''} ✕
+                {tag.tipo === 'TEXTO' ? ` · ${t('tags.typeText')}` : ''}
               </Text>
+              <Icono nombre="cerrar" tamano={10} color={colors.textTertiary} peso="bold" />
             </Pressable>
           ))}
         </View>
@@ -68,10 +71,10 @@ export const EditorTags: React.FC = () => {
       />
       {error && <Text style={[typography.caption, styles.error]}>{t(MENSAJES_ERROR[error])}</Text>}
       <View style={styles.tagTypeRow}>
-        <BlockChip label={t('tags.typeYesNo')} selected={tipo === 'SI_NO'} onPress={() => setTipo('SI_NO')} />
-        <BlockChip label={t('tags.typeText')} selected={tipo === 'TEXTO'} onPress={() => setTipo('TEXTO')} />
+        <Chip etiqueta={t('tags.typeYesNo')} seleccionado={tipo === 'SI_NO'} onPress={() => setTipo('SI_NO')} />
+        <Chip etiqueta={t('tags.typeText')} seleccionado={tipo === 'TEXTO'} onPress={() => setTipo('TEXTO')} />
       </View>
-      <GlowButton label={t('account.addCustomTag')} onPress={agregar} variant="secondary" />
+      <Boton titulo={t('account.addCustomTag')} icono="agregar" onPress={agregar} variante="secundario" deshabilitado={!nombre.trim()} />
     </View>
   );
 };
@@ -80,22 +83,27 @@ const styles = StyleSheet.create({
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: spacing.sm,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   removableTag: {
-    backgroundColor: colors.surfaceElevatedAlt,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.fillStrong,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginRight: spacing.sm,
-    marginBottom: spacing.sm,
+    paddingVertical: 7,
   },
   removableTagText: {
     color: colors.textPrimary,
   },
   tagInput: {
-    backgroundColor: colors.surfaceElevatedAlt,
-    borderRadius: 12,
+    backgroundColor: colors.fill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.md,
+    minHeight: 48,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
     color: colors.textPrimary,
@@ -109,6 +117,7 @@ const styles = StyleSheet.create({
   },
   tagTypeRow: {
     flexDirection: 'row',
+    gap: spacing.sm,
     marginTop: spacing.sm,
     marginBottom: spacing.md,
   },

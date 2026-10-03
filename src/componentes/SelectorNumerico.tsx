@@ -16,6 +16,8 @@ interface Props {
   unidad: string;
   titulo: string;
   icono: NombreIcono;
+  /** Texto que se muestra mientras no hay valor. */
+  vacio: string;
 }
 
 const formatear = (valor: number) => (Number.isInteger(valor) ? String(valor) : valor.toFixed(1).replace('.', ','));
@@ -35,6 +37,7 @@ export const SelectorNumerico: React.FC<Props> = ({
   unidad,
   titulo,
   icono,
+  vacio,
 }) => {
   const cambiar = (direccion: 1 | -1) => {
     hapticos.seleccion();
@@ -56,10 +59,14 @@ export const SelectorNumerico: React.FC<Props> = ({
       </View>
       <View style={styles.fila}>
         <BotonPaso icono="menos" onPress={() => cambiar(-1)} etiqueta={`Menos ${titulo}`} />
-        <Text style={[typography.numero, styles.valor, valor === null && styles.vacio]}>
-          {valor === null ? '—' : formatear(valor)}
-          {valor !== null && <Text style={[typography.footnote, styles.unidad]}> {unidad}</Text>}
-        </Text>
+        {valor === null ? (
+          <Text style={[typography.footnote, styles.vacio]}>{vacio}</Text>
+        ) : (
+          <Text style={[typography.numero, styles.valor]}>
+            {formatear(valor)}
+            <Text style={[typography.footnote, styles.unidad]}> {unidad}</Text>
+          </Text>
+        )}
         <BotonPaso icono="agregar" onPress={() => cambiar(1)} etiqueta={`Más ${titulo}`} />
       </View>
     </View>

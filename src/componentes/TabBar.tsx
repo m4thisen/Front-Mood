@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Icono, NombreIcono } from './Icono';
 import { colors, spacing, typography } from '@/tema';
@@ -43,6 +44,13 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
 
   return (
     <View style={[styles.envoltorio, { paddingBottom: Math.max(insets.bottom - 6, spacing.md) }]} pointerEvents="box-none">
+      {/* Desvanece el contenido que pasa por debajo de la barra. */}
+      <LinearGradient
+        colors={['rgba(5,11,30,0)', 'rgba(5,11,30,0.96)', '#050B1E']}
+        locations={[0, 0.2, 1]}
+        style={styles.desvanecido}
+        pointerEvents="none"
+      />
       <View style={styles.capsula}>
         <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={styles.velo} />
@@ -109,6 +117,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: 10,
   },
+  desvanecido: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: -24,
+  },
   capsula: {
     flex: 1,
     height: ALTO,
@@ -161,3 +176,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
   },
 });
+
+/** Alto total que ocupa la barra flotante, para ubicar contenido justo encima. */
+export function useAltoBarraInferior(): number {
+  const insets = useSafeAreaInsets();
+  return ALTO + Math.max(insets.bottom - 6, spacing.md);
+}

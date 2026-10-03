@@ -14,7 +14,11 @@ interface PropsPantalla {
 export const EncabezadoPantalla: React.FC<PropsPantalla> = ({ titulo, antetitulo, accion }) => (
   <View style={styles.pantalla}>
     <View style={styles.textos}>
-      {antetitulo && <Text style={[typography.footnote, styles.antetitulo]}>{antetitulo}</Text>}
+      {antetitulo && (
+        <Text style={[typography.footnote, styles.antetitulo]}>
+          {antetitulo.charAt(0).toUpperCase() + antetitulo.slice(1)}
+        </Text>
+      )}
       <Text style={[typography.largeTitle, styles.titulo]}>{titulo}</Text>
     </View>
     {accion && <BotonIcono icono={accion.icono} etiqueta={accion.etiqueta} onPress={accion.onPress} />}
@@ -72,7 +76,6 @@ const styles = StyleSheet.create({
   },
   antetitulo: {
     color: colors.textTertiary,
-    textTransform: 'capitalize',
     marginBottom: 2,
   },
   titulo: {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing } from '@/tema';
@@ -7,8 +7,10 @@ import { colors, spacing } from '@/tema';
 interface Props {
   children: React.ReactNode;
   scroll?: boolean;
-  style?: ViewStyle;
-  contentStyle?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<ViewStyle>;
+  /** Contenido fijo abajo (por ejemplo, el botón de guardar), fuera del scroll. */
+  pie?: React.ReactNode;
 }
 
 /**
@@ -25,7 +27,7 @@ const BackgroundGradient: React.FC = () => (
   />
 );
 
-export const ScreenContainer: React.FC<Props> = ({ children, scroll = false, style, contentStyle }) => {
+export const ScreenContainer: React.FC<Props> = ({ children, scroll = false, style, contentStyle, pie }) => {
   if (scroll) {
     return (
       <SafeAreaView style={[styles.safe, style]} edges={['top', 'left', 'right']}>
@@ -33,9 +35,13 @@ export const ScreenContainer: React.FC<Props> = ({ children, scroll = false, sty
         <ScrollView
           contentContainerStyle={[styles.content, contentStyle]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
         >
           {children}
         </ScrollView>
+        {pie}
       </SafeAreaView>
     );
   }

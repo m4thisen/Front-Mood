@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   primarioInactivo: {
-    backgroundColor: colors.fillStrong,
+    backgroundColor: colors.surfaceElevatedAlt,
   },
   secundario: {
     backgroundColor: colors.fill,

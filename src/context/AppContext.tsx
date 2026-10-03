@@ -6,10 +6,10 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import * as Storage from '@/storage/storage';
+import * as Storage from '@/persistencia/almacenamientoLocal';
 import { CustomTag, DayEntry, EntriesByDate, UserProfile } from '@/types/models';
-import { todayISO } from '@/utils/date';
-import { computeSoulColor, computeStreak } from '@/utils/stats';
+import { todayISO } from '@/utils/fecha';
+import { computeSoulColor, computeStreak } from '@/servicios/CalculadoraProgreso';
 
 const DRAFT_PROFILE: UserProfile = {
   name: '',

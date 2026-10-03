@@ -19,9 +19,9 @@ import {
 
 import { AppProvider } from '@/context/AppContext';
 import { I18nProvider } from '@/i18n';
-import { LanguageSync } from '@/navigation/LanguageSync';
-import { RootNavigator } from '@/navigation/RootNavigator';
-import { colors } from '@/theme';
+import { SincronizarIdioma } from '@/navegacion/SincronizarIdioma';
+import { RootNavigator } from '@/navegacion/RootNavigator';
+import { colors } from '@/tema';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -44,7 +44,7 @@ export default function App() {
       <SafeAreaProvider>
         <AppProvider>
           <I18nProvider>
-            <LanguageSync />
+            <SincronizarIdioma />
             <StatusBar style="light" />
             <RootNavigator />
           </I18nProvider>

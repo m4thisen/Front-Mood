@@ -1,0 +1,56 @@
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, radius, spacing, typography } from '@/tema';
+
+interface Props {
+  message: string;
+  step: string; // ej. "1/2"
+  visible: boolean;
+  onDismiss: () => void;
+}
+
+/** Globo de ayuda que apunta hacia abajo (al botón "Hoy" del navbar). */
+export const CoachMark: React.FC<Props> = ({ message, step, visible, onDismiss }) => {
+  if (!visible) return null;
+
+  return (
+    <Pressable onPress={onDismiss} style={styles.wrapper}>
+      <View style={styles.bubble}>
+        <Text style={[typography.bodyMedium, styles.message]}>{message}</Text>
+        <Text style={[typography.caption, styles.step]}>{step}</Text>
+      </View>
+      <View style={styles.arrow} />
+    </Pressable>
+  );
+};
+
+const styles = StyleSheet.create({
+  wrapper: {
+    position: 'absolute',
+    bottom: 92,
+    right: 24,
+    alignItems: 'flex-end',
+  },
+  bubble: {
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    maxWidth: 220,
+  },
+  message: {
+    color: colors.background,
+  },
+  step: {
+    color: 'rgba(5,11,30,0.6)',
+    marginTop: 2,
+  },
+  arrow: {
+    width: 14,
+    height: 14,
+    backgroundColor: colors.accent,
+    marginRight: 22,
+    marginTop: -6,
+    transform: [{ rotate: '45deg' }],
+  },
+});

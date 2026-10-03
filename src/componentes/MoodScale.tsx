@@ -6,14 +6,14 @@ import { moodScale } from '@/tema/colors';
 import { colors, typography } from '@/tema';
 import { shade } from '@/utils/color';
 import { useTranslation } from '@/i18n';
-import { MoodLevel } from '@/types/models';
+import { NivelAnimo } from '@/dominio';
 
 interface Props {
-  value: MoodLevel | null;
-  onChange: (level: MoodLevel) => void;
+  value: NivelAnimo | null;
+  onChange: (level: NivelAnimo) => void;
 }
 
-const FACES: Record<MoodLevel, string> = {
+const FACES: Record<NivelAnimo, string> = {
   1: '≖︿≖',
   2: '◡̈',
   3: '◡',
@@ -22,7 +22,7 @@ const FACES: Record<MoodLevel, string> = {
 };
 
 const Dot: React.FC<{
-  level: MoodLevel;
+  level: NivelAnimo;
   color: string;
   glow: string;
   label: string;
@@ -81,12 +81,12 @@ export const MoodScale: React.FC<Props> = ({ value, onChange }) => {
       {moodScale.map((m) => (
         <Dot
           key={m.level}
-          level={m.level as MoodLevel}
+          level={m.level as NivelAnimo}
           color={m.color}
           glow={m.glow}
           label={t(`mood.${m.level}`)}
           selected={value === m.level}
-          onPress={() => onChange(m.level as MoodLevel)}
+          onPress={() => onChange(m.level as NivelAnimo)}
         />
       ))}
     </View>

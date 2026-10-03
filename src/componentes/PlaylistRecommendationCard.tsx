@@ -5,7 +5,7 @@ import { Card } from './Card';
 import { colors, radius, spacing, typography } from '@/tema';
 import { shade } from '@/utils/color';
 import { useTranslation } from '@/i18n';
-import { useApp } from '@/context/AppContext';
+import { useIndicadoresProgreso, useListaRegistros } from '@/stores/RegistroStore';
 import { generateRecommendedPlaylists } from '@/api/simulado/devolucionesSimuladas';
 
 const COVER_SIZE = 116;
@@ -18,10 +18,11 @@ const NOTE_ICONS = ['🎵', '🎧', '🎶', '🎼'];
  */
 export const PlaylistRecommendationCard: React.FC = () => {
   const { t, language } = useTranslation();
-  const { entries, soulColor } = useApp();
+  const registros = useListaRegistros();
+  const { colorDelAlma } = useIndicadoresProgreso();
 
-  const playlists = useMemo(() => generateRecommendedPlaylists(entries, language), [entries, language]);
-  const baseColor = soulColor ?? colors.accent;
+  const playlists = useMemo(() => generateRecommendedPlaylists(registros, language), [registros, language]);
+  const baseColor = colorDelAlma ?? colors.accent;
 
   return (
     <Card style={styles.card}>

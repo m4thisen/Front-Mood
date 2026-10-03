@@ -6,22 +6,20 @@ import { GlowButton } from '@/componentes/GlowButton';
 import { StepDots } from '@/componentes/StepDots';
 import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
-import { useApp } from '@/context/AppContext';
+import { useSesionStore } from '@/stores/SesionStore';
 import { RootStackParamList } from '@/navegacion/tipos';
-import { BLOCK_CATEGORIES } from '@/datos/catalogoBloques';
-import { BlockCategoryKey } from '@/types/models';
+import { BLOQUES, claveTraduccionBloque, claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Bloques'>;
 
 export const BloquesScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
-  const { profile, updateProfile } = useApp();
+  const usuario = useSesionStore((s) => s.usuario);
+  const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
 
-  const [selected, setSelected] = useState<Set<BlockCategoryKey>>(
-    new Set(profile?.selectedBlocks ?? [])
-  );
+  const [selected, setSelected] = useState<Set<string>>(new Set(usuario?.bloquesActivos ?? []));
 
-  const toggle = (key: BlockCategoryKey) => {
+  const toggle = (key: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -30,9 +28,11 @@ export const BloquesScreen: React.FC<Props> = ({ navigation }) => {
     });
   };
 
-  const handleContinue = () => {
-    updateProfile({ selectedBlocks: Array.from(selected) });
-    navigation.navigate('BloquesEspeciales');
+  // Ningún bloque viene activo por defecto y se puede seguir sin elegir
+  // ninguno (CU-04, flujo A): se cambian después desde Mi cuenta.
+  const handleContinue = async () => {
+    await actualizarPreferencias({ bloquesActivos: Array.from(selected) });
+    navigation.navigate('Recordatorio');
   };
 
   return (
@@ -41,17 +41,17 @@ export const BloquesScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={[typography.displayM, styles.title]}>{t('steps.blocksTitle')}</Text>
       <Text style={[typography.body, styles.subtitle]}>{t('steps.blocksSubtitle')}</Text>
 
-      {BLOCK_CATEGORIES.map((category) => {
-        const isSelected = selected.has(category.key);
+      {BLOQUES.map((category) => {
+        const isSelected = selected.has(category.clave);
         return (
           <Pressable
-            key={category.key}
-            onPress={() => toggle(category.key)}
+            key={category.clave}
+            onPress={() => toggle(category.clave)}
             style={[styles.categoryCard, isSelected && styles.categoryCardSelected]}
           >
             <View style={styles.categoryHeader}>
-              <Text style={styles.categoryIcon}>{category.icon}</Text>
-              <Text style={[typography.subtitle, styles.categoryTitle]}>{t(category.titleKey)}</Text>
+              <Text style={styles.categoryIcon}>{category.icono}</Text>
+              <Text style={[typography.subtitle, styles.categoryTitle]}>{t(claveTraduccionBloque(category.clave))}</Text>
               <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
                 {isSelected ? <Text style={styles.checkmark}>✓</Text> : null}
               </View>
@@ -64,7 +64,7 @@ export const BloquesScreen: React.FC<Props> = ({ navigation }) => {
               ]}
               numberOfLines={1}
             >
-              {category.options.map((o) => t(o.labelKey)).join(' · ')}
+              {category.etiquetas.map((e) => t(claveTraduccionEtiqueta(e.clave))).join(' · ')}
             </Text>
           </Pressable>
         );
@@ -73,7 +73,6 @@ export const BloquesScreen: React.FC<Props> = ({ navigation }) => {
       <GlowButton
         label={t('common.continue')}
         onPress={handleContinue}
-        disabled={selected.size === 0}
         style={styles.continueButton}
       />
     </ScreenContainer>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer, DarkTheme, Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,11 +7,10 @@ import { MainTabNavigator } from './MainTabNavigator';
 import { BienvenidaScreen } from '@/pantallas/BienvenidaScreen';
 import { DatosBasicosScreen } from '@/pantallas/onboarding/DatosBasicosScreen';
 import { BloquesScreen } from '@/pantallas/onboarding/BloquesScreen';
-import { BloquesEspecialesScreen } from '@/pantallas/onboarding/BloquesEspecialesScreen';
 import { RecordatorioScreen } from '@/pantallas/onboarding/RecordatorioScreen';
-import { DetalleDiaScreen } from '@/pantallas/DetalleDiaScreen';
-import { useApp } from '@/context/AppContext';
 import { ColorDelAlmaScreen } from '@/pantallas/onboarding/ColorDelAlmaScreen';
+import { DetalleDiaScreen } from '@/pantallas/DetalleDiaScreen';
+import { useSesionStore } from '@/stores/SesionStore';
 import { colors } from '@/tema';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,10 +27,23 @@ const navTheme: Theme = {
   },
 };
 
+/**
+ * Las pantallas disponibles dependen del estado de la sesión: sin usuario
+ * solo existe la bienvenida; con usuario sin configurar, el onboarding; y con
+ * el onboarding completo, la app. Al cerrar sesión se vuelve sola a la
+ * bienvenida, y si el onboarding quedó a medias se retoma en el próximo
+ * ingreso (CU-04, postcondición de fallo).
+ */
 export const RootNavigator: React.FC = () => {
-  const { isLoading, profile } = useApp();
+  const cargando = useSesionStore((s) => s.cargando);
+  const usuario = useSesionStore((s) => s.usuario);
+  const cargar = useSesionStore((s) => s.cargar);
 
-  if (isLoading) {
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  if (cargando) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.accent} size="large" />
@@ -39,26 +51,30 @@ export const RootNavigator: React.FC = () => {
     );
   }
 
-  const startOnboarding = !profile || !profile.onboardingComplete;
-
   return (
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator
-        initialRouteName={startOnboarding ? 'Bienvenida' : 'Principal'}
         screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
       >
-        <Stack.Screen name="Bienvenida" component={BienvenidaScreen} />
-        <Stack.Screen name="DatosBasicos" component={DatosBasicosScreen} />
-        <Stack.Screen name="Bloques" component={BloquesScreen} />
-        <Stack.Screen name="BloquesEspeciales" component={BloquesEspecialesScreen} />
-        <Stack.Screen name="Recordatorio" component={RecordatorioScreen} />
-        <Stack.Screen name="ColorDelAlma" component={ColorDelAlmaScreen} />
-        <Stack.Screen name="Principal" component={MainTabNavigator} />
-        <Stack.Screen
-          name="DetalleDia"
-          component={DetalleDiaScreen}
-          options={{ presentation: 'modal' }}
-        />
+        {!usuario ? (
+          <Stack.Screen name="Bienvenida" component={BienvenidaScreen} />
+        ) : !usuario.onboardingCompleto ? (
+          <Stack.Group>
+            <Stack.Screen name="DatosBasicos" component={DatosBasicosScreen} />
+            <Stack.Screen name="Bloques" component={BloquesScreen} />
+            <Stack.Screen name="Recordatorio" component={RecordatorioScreen} />
+            <Stack.Screen name="ColorDelAlma" component={ColorDelAlmaScreen} />
+          </Stack.Group>
+        ) : (
+          <Stack.Group>
+            <Stack.Screen name="Principal" component={MainTabNavigator} />
+            <Stack.Screen
+              name="DetalleDia"
+              component={DetalleDiaScreen}
+              options={{ presentation: 'modal' }}
+            />
+          </Stack.Group>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

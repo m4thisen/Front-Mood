@@ -1,18 +1,16 @@
 import { useEffect } from 'react';
-import { useApp } from '@/context/AppContext';
+import { useSesionStore } from '@/stores/SesionStore';
 import { useTranslation } from '@/i18n';
 
-/** Sincroniza el idioma guardado en el perfil con el i18n activo al cargar la app. */
+/** Aplica a la interfaz el idioma guardado en las preferencias del usuario. */
 export const SincronizarIdioma: React.FC = () => {
-  const { profile } = useApp();
+  const idioma = useSesionStore((s) => s.usuario?.idioma);
   const { language, setLanguage } = useTranslation();
 
   useEffect(() => {
-    if (profile?.language && profile.language !== language) {
-      setLanguage(profile.language);
-    }
+    if (idioma && idioma !== language) setLanguage(idioma);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.language]);
+  }, [idioma]);
 
   return null;
 };

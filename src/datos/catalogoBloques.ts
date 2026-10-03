@@ -1,121 +1,43 @@
-import { BlockCategoryKey, SpecialBlockKey } from '@/types/models';
+/**
+ * Catálogo de bloques de seguimiento y sus etiquetas. Es el mismo contenido
+ * que el servidor carga con el seed de las tablas `bloque` y `etiqueta`, y se
+ * replica en la app para funcionar sin conexión.
+ */
+import { BloqueSeguimiento, Etiqueta } from '@/dominio';
 
-export interface BlockOption {
-  id: string; // clave estable, ej "trabajo.vacaciones"
-  labelKey: string; // clave de traducción
-}
+const bloque = (clave: string, orden: number, icono: string, etiquetas: string[]): BloqueSeguimiento => ({
+  clave,
+  orden,
+  icono,
+  etiquetas: etiquetas.map((e, i) => ({ clave: `${clave}.${e}`, bloqueClave: clave, orden: i + 1 })),
+});
 
-export interface BlockCategory {
-  key: BlockCategoryKey;
-  icon: string; // emoji simple, sin dependencias extra de íconos
-  titleKey: string;
-  options: BlockOption[];
-}
-
-const makeOptions = (category: BlockCategoryKey, keys: string[]): BlockOption[] =>
-  keys.map((k) => ({ id: `${category}.${k}`, labelKey: `blockOption.${category}.${k}` }));
-
-export const BLOCK_CATEGORIES: BlockCategory[] = [
-  {
-    key: 'estudios',
-    icon: '📚',
-    titleKey: 'block.estudios',
-    options: makeOptions('estudios', ['examen', 'entrega', 'clase', 'estudie', 'aprobe']),
-  },
-  {
-    key: 'descanso',
-    icon: '🌙',
-    titleKey: 'block.descanso',
-    options: makeOptions('descanso', ['dormiBien', 'dormiMal', 'siesta', 'diaLibre']),
-  },
-  {
-    key: 'hobbies',
-    icon: '🎨',
-    titleKey: 'block.hobbies',
-    options: makeOptions('hobbies', ['lei', 'jugue', 'pinte', 'cocine', 'musica']),
-  },
-  {
-    key: 'emociones',
-    icon: '💫',
-    titleKey: 'block.emociones',
-    options: makeOptions('emociones', ['alegria', 'tristeza', 'ansiedad', 'calma', 'enojo']),
-  },
-  {
-    key: 'trabajo',
-    icon: '💼',
-    titleKey: 'block.trabajo',
-    options: makeOptions('trabajo', ['vacaciones', 'horasExtras', 'saliATiempo', 'reunionDificil', 'logro']),
-  },
-  {
-    key: 'autocuidado',
-    icon: '🫧',
-    titleKey: 'block.autocuidado',
-    options: makeOptions('autocuidado', ['meditacion', 'journaling', 'terapia', 'tiempoASolas']),
-  },
-  {
-    key: 'salud',
-    icon: '🩺',
-    titleKey: 'block.salud',
-    options: makeOptions('salud', ['medico', 'tomePastillas', 'meSentiMal', 'chequeo']),
-  },
-  {
-    key: 'amor',
-    icon: '❤️',
-    titleKey: 'block.amor',
-    options: makeOptions('amor', ['cita', 'conversacionLinda', 'discusion', 'extranoAAlguien']),
-  },
-  {
-    key: 'tiempo',
-    icon: '⏳',
-    titleKey: 'block.tiempo',
-    options: makeOptions('tiempo', ['tiempoLibre', 'ocupado', 'llegueTarde', 'llegueTemprano']),
-  },
-  {
-    key: 'gente',
-    icon: '👥',
-    titleKey: 'block.gente',
-    options: makeOptions('gente', ['saliConAmigos', 'enFamilia', 'estuveSolo', 'conociAAlguien']),
-  },
-  {
-    key: 'ejercicio',
-    icon: '🏃',
-    titleKey: 'block.ejercicio',
-    options: makeOptions('ejercicio', ['camine', 'gimnasio', 'corri', 'yoga', 'noHiceNada']),
-  },
-  {
-    key: 'comidas',
-    icon: '🍽️',
-    titleKey: 'block.comidas',
-    options: makeOptions('comidas', ['cocine', 'comiAfuera', 'comidaSaludable', 'comiDeMas', 'salteeComida']),
-  },
-  {
-    key: 'eventos',
-    icon: '🎉',
-    titleKey: 'block.eventos',
-    options: makeOptions('eventos', ['cumpleanos', 'viaje', 'celebracion', 'imprevisto']),
-  },
+export const BLOQUES: BloqueSeguimiento[] = [
+  bloque('estudios', 1, '📚', ['examen', 'entrega', 'clase', 'estudie', 'aprobe']),
+  bloque('descanso', 2, '🌙', ['dormiBien', 'dormiMal', 'siesta', 'diaLibre']),
+  bloque('hobbies', 3, '🎨', ['lei', 'jugue', 'pinte', 'cocine', 'musica']),
+  bloque('emociones', 4, '💫', ['alegria', 'tristeza', 'ansiedad', 'calma', 'enojo']),
+  bloque('trabajo', 5, '💼', ['vacaciones', 'horasExtras', 'saliATiempo', 'reunionDificil', 'logro']),
+  bloque('autocuidado', 6, '🫧', ['meditacion', 'journaling', 'terapia', 'tiempoASolas']),
+  bloque('salud', 7, '🩺', ['medico', 'tomePastillas', 'meSentiMal', 'chequeo']),
+  bloque('amor', 8, '❤️', ['cita', 'conversacionLinda', 'discusion', 'extranoAAlguien']),
+  bloque('tiempo', 9, '⏳', ['tiempoLibre', 'ocupado', 'llegueTarde', 'llegueTemprano']),
+  bloque('gente', 10, '👥', ['saliConAmigos', 'enFamilia', 'estuveSolo', 'conociAAlguien']),
+  bloque('ejercicio', 11, '🏃', ['camine', 'gimnasio', 'corri', 'yoga', 'noHiceNada']),
+  bloque('comidas', 12, '🍽️', ['cocine', 'comiAfuera', 'comidaSaludable', 'comiDeMas', 'salteeComida']),
+  bloque('eventos', 13, '🎉', ['cumpleanos', 'viaje', 'celebracion', 'imprevisto']),
 ];
 
-export const ALL_OPTIONS: BlockOption[] = BLOCK_CATEGORIES.flatMap((c) => c.options);
+export const TODAS_LAS_ETIQUETAS: Etiqueta[] = BLOQUES.flatMap((b) => b.etiquetas);
 
-export const getOptionLabelKey = (id: string): string =>
-  ALL_OPTIONS.find((o) => o.id === id)?.labelKey ?? id;
+export const claveTraduccionBloque = (clave: string): string => `block.${clave}`;
 
-export const getOptionCategoryIcon = (id: string): string => {
-  const categoryKey = id.split('.')[0];
-  return BLOCK_CATEGORIES.find((c) => c.key === categoryKey)?.icon ?? '✨';
+export const claveTraduccionEtiqueta = (clave: string): string => `blockOption.${clave}`;
+
+export const iconoDeEtiqueta = (claveEtiqueta: string): string => {
+  const bloqueClave = claveEtiqueta.split('.')[0];
+  return BLOQUES.find((b) => b.clave === bloqueClave)?.icono ?? '✨';
 };
 
-export interface SpecialBlock {
-  key: SpecialBlockKey;
-  icon: string;
-  titleKey: string;
-  descriptionKey: string;
-}
-
-export const SPECIAL_BLOCKS: SpecialBlock[] = [
-  { key: 'musica', icon: '🎧', titleKey: 'special.musica', descriptionKey: 'special.musica.desc' },
-  { key: 'clima', icon: '☁️', titleKey: 'special.clima', descriptionKey: 'special.clima.desc' },
-  { key: 'ejercicio', icon: '⚡️', titleKey: 'special.ejercicio', descriptionKey: 'special.ejercicio.desc' },
-  { key: 'sueno', icon: '💤', titleKey: 'special.sueno', descriptionKey: 'special.sueno.desc' },
-];
+export const bloquesActivos = (claves: string[]): BloqueSeguimiento[] =>
+  BLOQUES.filter((b) => claves.includes(b.clave));

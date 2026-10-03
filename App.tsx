@@ -17,7 +17,6 @@ import {
   Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope';
 
-import { AppProvider } from '@/context/AppContext';
 import { I18nProvider } from '@/i18n';
 import { SincronizarIdioma } from '@/navegacion/SincronizarIdioma';
 import { RootNavigator } from '@/navegacion/RootNavigator';
@@ -42,13 +41,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AppProvider>
-          <I18nProvider>
-            <SincronizarIdioma />
-            <StatusBar style="light" />
-            <RootNavigator />
-          </I18nProvider>
-        </AppProvider>
+        <I18nProvider>
+          <SincronizarIdioma />
+          <StatusBar style="light" />
+          <RootNavigator />
+        </I18nProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

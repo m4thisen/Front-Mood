@@ -7,23 +7,20 @@ import { GlowButton } from '@/componentes/GlowButton';
 import { SoulOrb } from '@/componentes/SoulOrb';
 import { colors, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
-import { useApp } from '@/context/AppContext';
+import { useSesionStore } from '@/stores/SesionStore';
 import { RootStackParamList } from '@/navegacion/tipos';
 import { moodScale } from '@/tema/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Bienvenida'>;
 
-export const BienvenidaScreen: React.FC<Props> = ({ navigation }) => {
+export const BienvenidaScreen: React.FC<Props> = () => {
   const { t, language, setLanguage } = useTranslation();
-  const { beginOnboarding } = useApp();
+  const iniciarSesion = useSesionStore((s) => s.iniciarSesion);
 
   // Crear cuenta e iniciar sesión usan un único endpoint (POST /auth/google):
   // el servidor decide si crea o si entra. El flujo con Google se conecta en
   // la iteración 1; mientras tanto ambos botones abren el onboarding.
-  const ingresar = () => {
-    beginOnboarding();
-    navigation.navigate('DatosBasicos');
-  };
+  const ingresar = () => iniciarSesion(language);
 
   // Color de muestra para el orbe de bienvenida: un promedio de toda la escala.
   const previewColor = moodScale[3].color;

@@ -6,84 +6,98 @@ import { Card } from '@/componentes/Card';
 import { GlowButton } from '@/componentes/GlowButton';
 import { MoodScale } from '@/componentes/MoodScale';
 import { BlockChip } from '@/componentes/BlockChip';
+import { AccordionSection } from '@/componentes/AccordionSection';
 import { colors, spacing, typography, TAB_BAR_CLEARANCE } from '@/tema';
 import { useTranslation } from '@/i18n';
-import { useApp } from '@/context/AppContext';
-import { BLOCK_CATEGORIES, SPECIAL_BLOCKS } from '@/datos/catalogoBloques';
-import { DayEntry, MoodLevel, WeatherOption } from '@/types/models';
-import { todayISO } from '@/utils/fecha';
-import { AccordionSection } from '@/componentes/AccordionSection';
+import { useSesionStore, useTagsActivos } from '@/stores/SesionStore';
+import { useRegistroDeHoy, useRegistroStore } from '@/stores/RegistroStore';
+import { bloquesActivos, claveTraduccionBloque, claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
+import { Clima, CLIMAS, DatosRegistro, ErrorValidacion, NivelAnimo } from '@/dominio';
 
-const WEATHER_OPTIONS: { key: WeatherOption; icon: string }[] = [
-  { key: 'soleado', icon: '☀️' },
-  { key: 'nublado', icon: '☁️' },
-  { key: 'lluvia', icon: '🌧️' },
-  { key: 'frio', icon: '❄️' },
-  { key: 'calor', icon: '🔥' },
-];
+const ICONOS_CLIMA: Record<Clima, string> = {
+  SOLEADO: '☀️',
+  NUBLADO: '☁️',
+  LLUVIA: '🌧️',
+  FRIO: '❄️',
+  CALOR: '🔥',
+};
 
+const MENSAJES_ERROR: Partial<Record<ErrorValidacion, string>> = {
+  HORAS_SUENO_FUERA_DE_RANGO: 'today.errorSleepRange',
+  MINUTOS_EJERCICIO_FUERA_DE_RANGO: 'today.errorExerciseRange',
+};
+
+/** "7,5" o "7.5" → 7.5 · vacío → null · texto inválido → NaN (lo rechaza la validación). */
+const aNumero = (texto: string): number | null => {
+  const limpio = texto.trim().replace(',', '.');
+  return limpio === '' ? null : Number(limpio);
+};
+
+/**
+ * Formulario de carga del día (CU-09) y su edición (CU-11). El único dato
+ * obligatorio es el ánimo; sueño, ejercicio, clima y canción se muestran
+ * siempre como opcionales.
+ */
 export const RegistroScreen: React.FC = () => {
   const { t } = useTranslation();
-  const { profile, todayEntry, saveEntry } = useApp();
   const navigation = useNavigation<any>();
+  const usuario = useSesionStore((s) => s.usuario);
+  const tagsActivos = useTagsActivos();
+  const registroDeHoy = useRegistroDeHoy();
+  const guardar = useRegistroStore((s) => s.guardar);
 
-  const selectedCategories = useMemo(
-    () => BLOCK_CATEGORIES.filter((c) => profile?.selectedBlocks.includes(c.key)),
-    [profile]
-  );
-  const selectedSpecial = useMemo(
-    () => SPECIAL_BLOCKS.filter((b) => profile?.selectedSpecialBlocks.includes(b.key)),
-    [profile]
-  );
+  const bloques = useMemo(() => bloquesActivos(usuario?.bloquesActivos ?? []), [usuario]);
 
-  const [mood, setMood] = useState<MoodLevel | null>(todayEntry?.mood ?? null);
-  const [note, setNote] = useState(todayEntry?.note ?? '');
-  const [selectedOptions, setSelectedOptions] = useState<Set<string>>(
-    new Set(todayEntry?.selectedOptions ?? [])
+  const [nivelAnimo, setNivelAnimo] = useState<NivelAnimo | null>(registroDeHoy?.nivelAnimo ?? null);
+  const [destacado, setDestacado] = useState(registroDeHoy?.destacado ?? false);
+  const [texto, setTexto] = useState(registroDeHoy?.texto ?? '');
+  const [etiquetas, setEtiquetas] = useState<Set<string>>(new Set(registroDeHoy?.etiquetas ?? []));
+  const [valoresTags, setValoresTags] = useState<Record<string, boolean | string>>(
+    registroDeHoy?.valoresTags ?? {}
   );
-  const [customValues, setCustomValues] = useState<Record<string, boolean | string>>(
-    todayEntry?.customTagValues ?? {}
+  const [climas, setClimas] = useState<Set<Clima>>(new Set(registroDeHoy?.climas ?? []));
+  const [horasSueno, setHorasSueno] = useState(registroDeHoy?.horasSueno?.toString() ?? '');
+  const [minutosEjercicio, setMinutosEjercicio] = useState(
+    registroDeHoy?.minutosEjercicio?.toString() ?? ''
   );
-  const [song, setSong] = useState(todayEntry?.song ?? '');
-  const [weather, setWeather] = useState<WeatherOption | undefined>(todayEntry?.weather);
-  const [exerciseMinutes, setExerciseMinutes] = useState(
-    todayEntry?.exerciseMinutes?.toString() ?? ''
-  );
-  const [sleepHours, setSleepHours] = useState(todayEntry?.sleepHours?.toString() ?? '');
-  const [favorite, setFavorite] = useState(todayEntry?.favorite ?? false);
-  const [savedFlash, setSavedFlash] = useState(false);
+  const [cancion, setCancion] = useState(registroDeHoy?.cancion?.titulo ?? '');
+  const [guardando, setGuardando] = useState(false);
 
-  const toggleOption = (id: string) => {
-    setSelectedOptions((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const alternar = <T,>(set: React.Dispatch<React.SetStateAction<Set<T>>>, valor: T) =>
+    set((previo) => {
+      const siguiente = new Set(previo);
+      if (siguiente.has(valor)) siguiente.delete(valor);
+      else siguiente.add(valor);
+      return siguiente;
     });
-  };
 
-  const toggleBooleanTag = (id: string) => {
-    setCustomValues((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const handleSave = async () => {
-    if (!mood) return;
-    const entry: DayEntry = {
-      date: todayISO(),
-      mood,
-      note,
-      loggedAtHour: new Date().getHours(),
-      selectedOptions: Array.from(selectedOptions),
-      customTagValues: customValues,
-      song: song || undefined,
-      weather,
-      exerciseMinutes: exerciseMinutes ? Number(exerciseMinutes) : undefined,
-      sleepHours: sleepHours ? Number(sleepHours) : undefined,
-      favorite,
+  const handleGuardar = async () => {
+    const datos: DatosRegistro = {
+      nivelAnimo,
+      destacado,
+      texto: texto.trim(),
+      etiquetas: Array.from(etiquetas),
+      valoresTags,
+      climas: CLIMAS.filter((c) => climas.has(c)),
+      horasSueno: aNumero(horasSueno),
+      minutosEjercicio: aNumero(minutosEjercicio),
+      // Provisorio hasta la iteración 5: el título se escribe a mano. Después
+      // se elige de la búsqueda en Spotify y se completa el resto de los datos.
+      cancion: cancion.trim()
+        ? { spotifyId: '', titulo: cancion.trim(), artista: '', portadaUrl: null }
+        : null,
     };
-    await saveEntry(entry);
-    setSavedFlash(true);
-    setTimeout(() => setSavedFlash(false), 2200);
+
+    setGuardando(true);
+    const errores = await guardar(datos);
+    setGuardando(false);
+
+    if (errores.length > 0) {
+      const mensaje = errores.map((e) => MENSAJES_ERROR[e]).find(Boolean);
+      if (mensaje) Alert.alert(t('today.errorTitle'), t(mensaje));
+      return;
+    }
+
     Alert.alert(t('today.savedPopupTitle'), t('today.savedPopupBody'), [
       { text: t('today.savedPopupCta'), onPress: () => navigation.navigate('Inicio') },
     ]);
@@ -92,24 +106,26 @@ export const RegistroScreen: React.FC = () => {
   return (
     <ScreenContainer scroll contentStyle={styles.content}>
       <Text style={[typography.displayM, styles.header]}>{t('today.title')}</Text>
-      {todayEntry && <Text style={[typography.caption, styles.alreadyLogged]}>{t('today.alreadyLogged')}</Text>}
+      {registroDeHoy && (
+        <Text style={[typography.caption, styles.alreadyLogged]}>{t('today.alreadyLogged')}</Text>
+      )}
 
       <Card style={styles.card}>
         <Text style={[typography.subtitle, styles.cardTitle]}>{t('today.moodQuestion')}</Text>
         <View style={styles.moodWrapper}>
-          <MoodScale value={mood} onChange={setMood} />
+          <MoodScale value={nivelAnimo} onChange={setNivelAnimo} />
         </View>
-        <Pressable onPress={() => setFavorite((f) => !f)} style={styles.favoriteToggle}>
-          <Text style={[typography.bodyMedium, favorite ? styles.favoriteOn : styles.favoriteOff]}>
-            {favorite ? t('today.favoriteToggleOn') : t('today.favoriteToggle')}
+        <Pressable onPress={() => setDestacado((d) => !d)} style={styles.favoriteToggle}>
+          <Text style={[typography.bodyMedium, destacado ? styles.favoriteOn : styles.favoriteOff]}>
+            {destacado ? t('today.favoriteToggleOn') : t('today.favoriteToggle')}
           </Text>
         </Pressable>
       </Card>
 
       <Card style={styles.card}>
         <TextInput
-          value={note}
-          onChangeText={setNote}
+          value={texto}
+          onChangeText={setTexto}
           placeholder={t('today.notePlaceholder')}
           placeholderTextColor={colors.textTertiary}
           multiline
@@ -117,23 +133,23 @@ export const RegistroScreen: React.FC = () => {
         />
       </Card>
 
-            {selectedCategories.length > 0 && (
+      {bloques.length > 0 && (
         <Card style={styles.card}>
           <Text style={[typography.subtitle, styles.cardTitle]}>{t('today.tagsTitle')}</Text>
-          {selectedCategories.map((category, i) => (
+          {bloques.map((bloque, i) => (
             <AccordionSection
-              key={category.key}
-              title={t(category.titleKey)}
-              icon={category.icon}
+              key={bloque.clave}
+              title={t(claveTraduccionBloque(bloque.clave))}
+              icon={bloque.icono}
               defaultOpen={i === 0}
             >
               <View style={styles.chipsRow}>
-                {category.options.map((option) => (
+                {bloque.etiquetas.map((etiqueta) => (
                   <BlockChip
-                    key={option.id}
-                    label={t(option.labelKey)}
-                    selected={selectedOptions.has(option.id)}
-                    onPress={() => toggleOption(option.id)}
+                    key={etiqueta.clave}
+                    label={t(claveTraduccionEtiqueta(etiqueta.clave))}
+                    selected={etiquetas.has(etiqueta.clave)}
+                    onPress={() => alternar(setEtiquetas, etiqueta.clave)}
                   />
                 ))}
               </View>
@@ -142,97 +158,75 @@ export const RegistroScreen: React.FC = () => {
         </Card>
       )}
 
-      {selectedSpecial.map((block) => {
-        if (block.key === 'musica') {
-          return (
-            <Card key={block.key} style={styles.card}>
-              <Text style={[typography.subtitle, styles.cardTitle]}>
-                {block.icon} {t('today.songLabel')}
-              </Text>
-              <TextInput
-                value={song}
-                onChangeText={setSong}
-                placeholder={t('today.songPlaceholder')}
-                placeholderTextColor={colors.textTertiary}
-                style={[styles.textInput, { marginTop: spacing.sm }]}
-              />
-            </Card>
-          );
-        }
-        if (block.key === 'clima') {
-          return (
-            <Card key={block.key} style={styles.card}>
-              <Text style={[typography.subtitle, styles.cardTitle]}>
-                {block.icon} {t('today.weatherLabel')}
-              </Text>
-              <View style={[styles.chipsRow, { marginTop: spacing.sm }]}>
-                {WEATHER_OPTIONS.map((w) => (
-                  <BlockChip
-                    key={w.key}
-                    icon={w.icon}
-                    label={t(`weather.${w.key}`)}
-                    selected={weather === w.key}
-                    onPress={() => setWeather(w.key)}
-                  />
-                ))}
-              </View>
-            </Card>
-          );
-        }
-        if (block.key === 'ejercicio') {
-          return (
-            <Card key={block.key} style={styles.card}>
-              <Text style={[typography.subtitle, styles.cardTitle]}>
-                {block.icon} {t('today.exerciseLabel')}
-              </Text>
-              <TextInput
-                value={exerciseMinutes}
-                onChangeText={setExerciseMinutes}
-                keyboardType="number-pad"
-                placeholder="30"
-                placeholderTextColor={colors.textTertiary}
-                style={[styles.textInput, { marginTop: spacing.sm }]}
-              />
-            </Card>
-          );
-        }
-        if (block.key === 'sueno') {
-          return (
-            <Card key={block.key} style={styles.card}>
-              <Text style={[typography.subtitle, styles.cardTitle]}>
-                {block.icon} {t('today.sleepLabel')}
-              </Text>
-              <TextInput
-                value={sleepHours}
-                onChangeText={setSleepHours}
-                keyboardType="decimal-pad"
-                placeholder="8"
-                placeholderTextColor={colors.textTertiary}
-                style={[styles.textInput, { marginTop: spacing.sm }]}
-              />
-            </Card>
-          );
-        }
-        return null;
-      })}
+      <Card style={styles.card}>
+        <Text style={[typography.subtitle, styles.cardTitle]}>☁️ {t('today.weatherLabel')}</Text>
+        <View style={[styles.chipsRow, styles.fieldBody]}>
+          {CLIMAS.map((clima) => (
+            <BlockChip
+              key={clima}
+              icon={ICONOS_CLIMA[clima]}
+              label={t(`weather.${clima}`)}
+              selected={climas.has(clima)}
+              onPress={() => alternar(setClimas, clima)}
+            />
+          ))}
+        </View>
+      </Card>
 
-      {(profile?.customTags.length ?? 0) > 0 && (
+      <View style={styles.numbersRow}>
+        <Card style={styles.numberCard}>
+          <Text style={[typography.subtitle, styles.cardTitle]}>💤 {t('today.sleepLabel')}</Text>
+          <TextInput
+            value={horasSueno}
+            onChangeText={setHorasSueno}
+            keyboardType="decimal-pad"
+            placeholder="8"
+            placeholderTextColor={colors.textTertiary}
+            style={[styles.textInput, styles.fieldBody]}
+          />
+        </Card>
+        <Card style={styles.numberCard}>
+          <Text style={[typography.subtitle, styles.cardTitle]}>⚡️ {t('today.exerciseLabel')}</Text>
+          <TextInput
+            value={minutosEjercicio}
+            onChangeText={setMinutosEjercicio}
+            keyboardType="number-pad"
+            placeholder="30"
+            placeholderTextColor={colors.textTertiary}
+            style={[styles.textInput, styles.fieldBody]}
+          />
+        </Card>
+      </View>
+
+      <Card style={styles.card}>
+        <Text style={[typography.subtitle, styles.cardTitle]}>🎧 {t('today.songLabel')}</Text>
+        <TextInput
+          value={cancion}
+          onChangeText={setCancion}
+          placeholder={t('today.songPlaceholder')}
+          placeholderTextColor={colors.textTertiary}
+          style={[styles.textInput, styles.fieldBody]}
+        />
+      </Card>
+
+      {tagsActivos.length > 0 && (
         <Card style={styles.card}>
-          <View style={styles.chipsRow}>
-            {profile?.customTags.map((tag) =>
-              tag.type === 'boolean' ? (
+          <Text style={[typography.subtitle, styles.cardTitle]}>{t('today.customTagsTitle')}</Text>
+          <View style={[styles.chipsRow, styles.fieldBody]}>
+            {tagsActivos.map((tag) =>
+              tag.tipo === 'SI_NO' ? (
                 <BlockChip
                   key={tag.id}
-                  label={tag.label}
-                  selected={Boolean(customValues[tag.id])}
-                  onPress={() => toggleBooleanTag(tag.id)}
+                  label={tag.nombre}
+                  selected={valoresTags[tag.id] === true}
+                  onPress={() => setValoresTags((v) => ({ ...v, [tag.id]: v[tag.id] !== true }))}
                 />
               ) : (
                 <View key={tag.id} style={styles.customTextField}>
-                  <Text style={[typography.caption, styles.categoryLabel]}>{tag.label}</Text>
+                  <Text style={[typography.caption, styles.categoryLabel]}>{tag.nombre}</Text>
                   <TextInput
-                    value={(customValues[tag.id] as string) ?? ''}
-                    onChangeText={(val) => setCustomValues((prev) => ({ ...prev, [tag.id]: val }))}
+                    value={(valoresTags[tag.id] as string) ?? ''}
+                    onChangeText={(valor) => setValoresTags((v) => ({ ...v, [tag.id]: valor }))}
                     placeholderTextColor={colors.textTertiary}
                     style={styles.textInput}
                   />
@@ -244,11 +238,14 @@ export const RegistroScreen: React.FC = () => {
       )}
 
       <GlowButton
-        label={savedFlash ? t('today.savedToast') : t('today.saveEntry')}
-        onPress={handleSave}
-        disabled={!mood}
+        label={t('today.saveEntry')}
+        onPress={handleGuardar}
+        disabled={!nivelAnimo || guardando}
         style={styles.saveButton}
       />
+      {!nivelAnimo && (
+        <Text style={[typography.caption, styles.requiredHint]}>{t('today.moodRequired')}</Text>
+      )}
     </ScreenContainer>
   );
 };
@@ -272,6 +269,9 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: colors.textPrimary,
   },
+  fieldBody: {
+    marginTop: spacing.sm,
+  },
   moodWrapper: {
     marginTop: spacing.lg,
   },
@@ -292,9 +292,6 @@ const styles = StyleSheet.create({
     minHeight: 70,
     textAlignVertical: 'top',
   },
-  categoryBlock: {
-    marginTop: spacing.md,
-  },
   categoryLabel: {
     color: colors.textTertiary,
     marginBottom: spacing.xs,
@@ -302,6 +299,14 @@ const styles = StyleSheet.create({
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  numbersRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  numberCard: {
+    flex: 1,
+    marginTop: spacing.lg,
   },
   textInput: {
     backgroundColor: colors.surfaceElevatedAlt,
@@ -318,5 +323,10 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: spacing.xl,
+  },
+  requiredHint: {
+    color: colors.textTertiary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 });

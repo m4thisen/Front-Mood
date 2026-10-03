@@ -3,20 +3,20 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Card } from './Card';
 import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
-import { useApp } from '@/context/AppContext';
+import { useListaRegistros } from '@/stores/RegistroStore';
 import { generateRecommendedHabits } from '@/api/simulado/devolucionesSimuladas';
 
 /**
  * Hábitos recomendados: si hay suficientes datos, ordena por correlación
- * real con mejor ánimo (usando computeMoodByOption); si no, muestra
+ * real con mejor ánimo (usando animoConEtiqueta); si no, muestra
  * sugerencias genéricas. La parte de "generado por IA" es mock — la lógica
  * de correlación en sí ya es real, corre sobre los datos del usuario.
  */
 export const HabitRecommendationCard: React.FC = () => {
   const { t } = useTranslation();
-  const { entries } = useApp();
+  const registros = useListaRegistros();
 
-  const habits = useMemo(() => generateRecommendedHabits(entries, t), [entries, t]);
+  const habits = useMemo(() => generateRecommendedHabits(registros, t), [registros, t]);
 
   return (
     <Card style={styles.card}>

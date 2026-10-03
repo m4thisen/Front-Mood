@@ -3,19 +3,20 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Card } from './Card';
 import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
-import { useApp } from '@/context/AppContext';
+import { useIndicadoresProgreso, useListaRegistros } from '@/stores/RegistroStore';
 import { generateAiSummary } from '@/api/simulado/devolucionesSimuladas';
 
 /**
  * Resumen de "cómo venís" hecho por IA. Hoy es 100% mock (ver
- * src/utils/mockAi.ts) — el día que haya un backend con un modelo real,
+ * api/simulado/devolucionesSimuladas.ts) — el día que haya un backend con un modelo real,
  * solo hay que reemplazar generateAiSummary por la llamada a la API.
  */
 export const AiSummaryCard: React.FC = () => {
   const { t } = useTranslation();
-  const { entries, streak } = useApp();
+  const registros = useListaRegistros();
+  const { rachaActual } = useIndicadoresProgreso();
 
-  const summary = useMemo(() => generateAiSummary(entries, streak, t), [entries, streak, t]);
+  const summary = useMemo(() => generateAiSummary(registros, rachaActual, t), [registros, rachaActual, t]);
 
   return (
     <Card style={styles.card} elevated>

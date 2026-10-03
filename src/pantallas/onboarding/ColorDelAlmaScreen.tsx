@@ -7,9 +7,12 @@ import { SoulOrb } from '@/componentes/SoulOrb';
 import { colors, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { moodScale } from '@/tema/colors';
+import { useSesionStore } from '@/stores/SesionStore';
 
-export const ColorDelAlmaScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+export const ColorDelAlmaScreen: React.FC = () => {
   const { t } = useTranslation();
+  // Al completar el onboarding el navegador pasa solo a la app principal.
+  const completarOnboarding = useSesionStore((s) => s.completarOnboarding);
 
   return (
     <ScreenContainer contentStyle={styles.content}>
@@ -27,7 +30,7 @@ export const ColorDelAlmaScreen: React.FC<{ navigation: any }> = ({ navigation }
       <Animated.View entering={FadeInDown.delay(700).duration(600)}>
         <GlowButton
           label={t('soulReveal.cta')}
-          onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Principal' }] })}
+          onPress={completarOnboarding}
         />
       </Animated.View>
     </ScreenContainer>

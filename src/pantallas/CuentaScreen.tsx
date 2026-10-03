@@ -1,58 +1,65 @@
 import React, { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { Card } from '@/componentes/Card';
 import { GlowButton } from '@/componentes/GlowButton';
 import { BlockChip } from '@/componentes/BlockChip';
-import { colors, radius, spacing, typography, TAB_BAR_CLEARANCE } from '@/tema';
+import { EditorTags } from '@/componentes/EditorTags';
+import { colors, spacing, typography, TAB_BAR_CLEARANCE } from '@/tema';
 import { useTranslation } from '@/i18n';
-import { useApp } from '@/context/AppContext';
-import { exportEntriesAsCsv, exportEntriesAsPdf } from '@/servicios/ExportService';
-import { scheduleDailyReminder } from '@/servicios/NotificacionService';
-import { CustomTag } from '@/types/models';
+import { useSesionStore } from '@/stores/SesionStore';
+import { useIndicadoresProgreso, useListaRegistros } from '@/stores/RegistroStore';
+import { exportarCSV, exportarPDF } from '@/servicios/ExportService';
+import { programarRecordatorio } from '@/servicios/NotificacionService';
+import { BLOQUES, claveTraduccionBloque } from '@/datos/catalogoBloques';
+import { formatearHora, HORA_RECORDATORIO_POR_DEFECTO, Idioma, partesHora } from '@/dominio';
 
-const buildTime = (hour: number, minute: number): Date => {
+const aFecha = (horaTexto: string): Date => {
+  const { hora, minuto } = partesHora(horaTexto);
   const d = new Date();
-  d.setHours(hour, minute, 0, 0);
+  d.setHours(hora, minuto, 0, 0);
   return d;
 };
 
 export const CuentaScreen: React.FC = () => {
   const { t, language, setLanguage } = useTranslation();
-  const { profile, entries, streak, updateProfile, addCustomTag, removeCustomTag, logout } = useApp();
-  const navigation = useNavigation<any>();
+  const usuario = useSesionStore((s) => s.usuario);
+  const tags = useSesionStore((s) => s.tags);
+  const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
+  const cerrarSesion = useSesionStore((s) => s.cerrarSesion);
+  const registros = useListaRegistros();
+  const { rachaActual, diasRegistrados } = useIndicadoresProgreso();
 
-  const [newTagLabel, setNewTagLabel] = useState('');
-  const [newTagType, setNewTagType] = useState<'boolean' | 'text'>('boolean');
-
+  const horaRecordatorio = usuario?.horaRecordatorio ?? HORA_RECORDATORIO_POR_DEFECTO;
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [draftTime, setDraftTime] = useState(
-    buildTime(profile?.notificationHour ?? 21, profile?.notificationMinute ?? 0)
-  );
+  const [draftTime, setDraftTime] = useState(aFecha(horaRecordatorio));
 
-  const totalEntries = Object.keys(entries).length;
-  const pad = (n: number) => n.toString().padStart(2, '0');
-
-  const changeLanguage = (lang: 'es' | 'en') => {
-    setLanguage(lang);
-    updateProfile({ language: lang });
+  const changeLanguage = (idioma: Idioma) => {
+    setLanguage(idioma);
+    actualizarPreferencias({ idioma });
   };
 
-  const handleAddTag = () => {
-    const label = newTagLabel.trim();
-    if (!label) return;
-    const tag: CustomTag = { id: `custom.${Date.now()}`, label, type: newTagType };
-    addCustomTag(tag);
-    setNewTagLabel('');
+  // CU-07: desactivar un bloque no borra lo ya registrado; si quedan todos
+  // desactivados, se advierte que el registro queda reducido (excepción E1).
+  const toggleBloque = (clave: string) => {
+    const activos = usuario?.bloquesActivos ?? [];
+    const siguiente = activos.includes(clave) ? activos.filter((c) => c !== clave) : [...activos, clave];
+    if (siguiente.length === 0) {
+      Alert.alert(t('account.blocks'), t('account.noBlocksWarning'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.continue'), onPress: () => actualizarPreferencias({ bloquesActivos: [] }) },
+      ]);
+      return;
+    }
+    actualizarPreferencias({ bloquesActivos: siguiente });
   };
 
-  const handleExportCsv = () => exportEntriesAsCsv(entries);
-  const handleExportPdf = () => exportEntriesAsPdf(entries, profile);
+  const handleExportCsv = () => exportarCSV(registros, tags);
+  const handleExportPdf = () => exportarPDF(registros, usuario, tags);
 
   const openTimeEditor = () => {
-    setDraftTime(buildTime(profile?.notificationHour ?? 21, profile?.notificationMinute ?? 0));
+    setDraftTime(aFecha(horaRecordatorio));
     setShowTimePicker(true);
   };
 
@@ -63,24 +70,18 @@ export const CuentaScreen: React.FC = () => {
   };
 
   const handleSaveTime = async () => {
-    const hour = draftTime.getHours();
-    const minute = draftTime.getMinutes();
-    updateProfile({ notificationHour: hour, notificationMinute: minute });
-    await scheduleDailyReminder(hour, minute, t('appName'), t('welcome.description'));
+    const hora = formatearHora(draftTime.getHours(), draftTime.getMinutes());
+    await actualizarPreferencias({ horaRecordatorio: hora });
+    const programado = await programarRecordatorio(hora, t('appName'), t('welcome.description'));
+    if (!programado) Alert.alert(t('steps.notificationDeniedTitle'), t('steps.notificationDeniedBody'));
     setShowTimePicker(false);
   };
 
+  // CU-03: se pide confirmación y se avisa que los datos locales se conservan.
   const handleLogout = () => {
-    Alert.alert(t('account.logout'), undefined, [
+    Alert.alert(t('account.logout'), t('account.logoutConfirm'), [
       { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('account.logout'),
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          navigation.reset({ index: 0, routes: [{ name: 'Bienvenida' }] });
-        },
-      },
+      { text: t('account.logout'), style: 'destructive', onPress: cerrarSesion },
     ]);
   };
 
@@ -91,19 +92,19 @@ export const CuentaScreen: React.FC = () => {
       <Card style={styles.profileCard} elevated>
         <View style={styles.profileRow}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{profile?.name?.[0]?.toUpperCase() ?? '?'}</Text>
+            <Text style={styles.avatarInitial}>{usuario?.nombre?.[0]?.toUpperCase() ?? '?'}</Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={[typography.title, styles.name]}>{profile?.name}</Text>
+            <Text style={[typography.title, styles.name]}>{usuario?.nombre}</Text>
           </View>
         </View>
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={[typography.title, styles.statValue]}>{streak}</Text>
+            <Text style={[typography.title, styles.statValue]}>{rachaActual}</Text>
             <Text style={[typography.caption, styles.statLabel]}>{t('account.streak')}</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={[typography.title, styles.statValue]}>{totalEntries}</Text>
+            <Text style={[typography.title, styles.statValue]}>{diasRegistrados}</Text>
             <Text style={[typography.caption, styles.statLabel]}>{t('account.totalEntries')}</Text>
           </View>
         </View>
@@ -137,7 +138,7 @@ export const CuentaScreen: React.FC = () => {
 
         {!showTimePicker ? (
           <Text style={[typography.displayM, styles.notificationTime]}>
-            {pad(profile?.notificationHour ?? 21)}:{pad(profile?.notificationMinute ?? 0)}
+            {horaRecordatorio}
           </Text>
         ) : (
           <View>
@@ -162,30 +163,23 @@ export const CuentaScreen: React.FC = () => {
       </Card>
 
       <Card style={styles.card}>
-        <Text style={[typography.subtitle, styles.cardTitle]}>{t('account.customTags')}</Text>
+        <Text style={[typography.subtitle, styles.cardTitle]}>{t('account.blocks')}</Text>
         <View style={styles.chipsRow}>
-          {profile?.customTags.map((tag) => (
-            <Pressable key={tag.id} onPress={() => removeCustomTag(tag.id)} style={styles.removableTag}>
-              <Text style={[typography.bodyMedium, styles.removableTagText]}>{tag.label} ✕</Text>
-            </Pressable>
+          {BLOQUES.map((bloque) => (
+            <BlockChip
+              key={bloque.clave}
+              icon={bloque.icono}
+              label={t(claveTraduccionBloque(bloque.clave))}
+              selected={usuario?.bloquesActivos.includes(bloque.clave) ?? false}
+              onPress={() => toggleBloque(bloque.clave)}
+            />
           ))}
         </View>
-        <TextInput
-          value={newTagLabel}
-          onChangeText={setNewTagLabel}
-          placeholder={t('account.newTagPlaceholder')}
-          placeholderTextColor={colors.textTertiary}
-          style={styles.tagInput}
-        />
-        <View style={styles.tagTypeRow}>
-          <BlockChip
-            label="Sí / No"
-            selected={newTagType === 'boolean'}
-            onPress={() => setNewTagType('boolean')}
-          />
-          <BlockChip label="Texto" selected={newTagType === 'text'} onPress={() => setNewTagType('text')} />
-        </View>
-        <GlowButton label={t('account.addCustomTag')} onPress={handleAddTag} variant="secondary" />
+      </Card>
+
+      <Card style={styles.card}>
+        <Text style={[typography.subtitle, styles.cardTitle]}>{t('account.customTags')}</Text>
+        <EditorTags />
       </Card>
 
       <Card style={styles.card}>
@@ -301,32 +295,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.md,
     paddingVertical: spacing.xs,
-  },
-  removableTag: {
-    backgroundColor: colors.surfaceElevatedAlt,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginRight: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  removableTagText: {
-    color: colors.textPrimary,
-  },
-  tagInput: {
-    backgroundColor: colors.surfaceElevatedAlt,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    color: colors.textPrimary,
-    fontFamily: 'Manrope_500Medium',
-    fontSize: 14,
-    marginTop: spacing.xs,
-  },
-  tagTypeRow: {
-    flexDirection: 'row',
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
   },
   exportRow: {
     flexDirection: 'row',

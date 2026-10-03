@@ -10,13 +10,14 @@ import { PlaylistRecommendationCard } from '@/componentes/PlaylistRecommendation
 import { HabitRecommendationCard } from '@/componentes/HabitRecommendationCard';
 import { colors, spacing, typography, TAB_BAR_CLEARANCE } from '@/tema';
 import { useTranslation } from '@/i18n';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CoachMark } from '@/componentes/CoachMark';
-import { useApp } from '@/context/AppContext';
+import { useIndicadoresProgreso, useRegistroStore } from '@/stores/RegistroStore';
+import { coachmarkHoyVisto, marcarCoachmarkHoyVisto } from '@/persistencia/PreferenciasDispositivo';
 
 export const InicioScreen: React.FC = () => {
   const { t, language } = useTranslation();
-  const { entries, streak, soulColor } = useApp();
+  const registros = useRegistroStore((s) => s.registros);
+  const { rachaActual, colorDelAlma } = useIndicadoresProgreso();
   const navigation = useNavigation<any>();
 
   const now = new Date();
@@ -25,14 +26,14 @@ export const InicioScreen: React.FC = () => {
   const [showCoachMark, setShowCoachMark] = useState(false);
 
   React.useEffect(() => {
-    AsyncStorage.getItem('@mood/coachmark-today-seen').then((seen) => {
-      if (!seen) setShowCoachMark(true);
+    coachmarkHoyVisto().then((visto) => {
+      if (!visto) setShowCoachMark(true);
     });
   }, []);
 
   const dismissCoachMark = () => {
     setShowCoachMark(false);
-    AsyncStorage.setItem('@mood/coachmark-today-seen', '1');
+    marcarCoachmarkHoyVisto();
   };
 
   const goPrev = () => {
@@ -53,12 +54,12 @@ export const InicioScreen: React.FC = () => {
       <Text style={[typography.displayM, styles.header]}>{t('calendar.title')}</Text>
 
       <Card style={styles.soulCard} elevated>
-        <SoulOrb color={soulColor} size={84} />
+        <SoulOrb color={colorDelAlma} size={84} />
         <View style={styles.soulInfo}>
           <Text style={[typography.caption, styles.soulLabel]}>{t('calendar.soulColor')}</Text>
           <View style={styles.streakRow}>
             <Text style={styles.streakFlame}>🔥</Text>
-            <Text style={[typography.title, styles.streakNumber]}>{streak}</Text>
+            <Text style={[typography.title, styles.streakNumber]}>{rachaActual}</Text>
             <Text style={[typography.caption, styles.streakLabel]}>{t('calendar.streakDays')}</Text>
           </View>
         </View>
@@ -68,9 +69,9 @@ export const InicioScreen: React.FC = () => {
         <HeatmapCalendar
           year={year}
           month={month}
-          entries={entries}
+          registros={registros}
           language={language}
-          onSelectDay={(date) => navigation.navigate('DetalleDia', { date })}
+          onSelectDay={(date) => navigation.navigate('DetalleDia', { fecha: date })}
           onPrevMonth={goPrev}
           onNextMonth={goNext}
           onSelectYear={setYear}

@@ -5,39 +5,38 @@ import { Card } from '@/componentes/Card';
 import { MoodDistributionChart } from '@/componentes/MoodDistributionChart';
 import { colors, spacing, typography, TAB_BAR_CLEARANCE } from '@/tema';
 import { useTranslation } from '@/i18n';
-import { useApp } from '@/context/AppContext';
-import { getOptionLabelKey } from '@/datos/catalogoBloques';
+import { useIndicadoresProgreso, useListaRegistros } from '@/stores/RegistroStore';
+import { claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
 import { MoodStatusBar } from '@/componentes/MoodStatusBar';
 import { weekdayName } from '@/utils/fecha';
 import {
-  computeAverageMood,
-  computeBestWeekday,
-  computeLoggingTimeBucket,
-  computeMoodByOption,
-  computeMoodDistribution,
-  computeTopTags,
+  animoConEtiqueta,
+  distribucion,
+  FranjaHoraria,
+  franjaHoraria,
+  frecuencias,
+  mejorDiaSemana,
+  promedio,
 } from '@/servicios/MotorEstadistico';
-import { computeLongestStreak } from '@/servicios/CalculadoraProgreso';
 
-const BUCKET_LABEL: Record<string, string> = {
-  morning: '☀️',
-  afternoon: '🌤️',
-  evening: '🌆',
-  night: '🌙',
+const ICONOS_FRANJA: Record<FranjaHoraria, string> = {
+  MANANA: '☀️',
+  TARDE: '🌤️',
+  NOCHE: '🌆',
+  MADRUGADA: '🌙',
 };
 
 export const EstadisticasScreen: React.FC = () => {
   const { t, language } = useTranslation();
-  const { entries } = useApp();
+  const registros = useListaRegistros();
+  const { rachaMaxima, diasRegistrados } = useIndicadoresProgreso();
 
-  const hasData = Object.keys(entries).length > 0;
-  const avgMood = useMemo(() => computeAverageMood(entries), [entries]);
-  const totalEntries = Object.keys(entries).length;
-  const bucket = useMemo(() => computeLoggingTimeBucket(entries), [entries]);
-  const topTags = useMemo(() => computeTopTags(entries, 6), [entries]);
-  const distribution = useMemo(() => computeMoodDistribution(entries), [entries]);
-  const longestStreak = useMemo(() => computeLongestStreak(entries), [entries]);
-  const bestWeekday = useMemo(() => computeBestWeekday(entries), [entries]);
+  const hasData = registros.length > 0;
+  const avgMood = useMemo(() => promedio(registros), [registros]);
+  const bucket = useMemo(() => franjaHoraria(registros), [registros]);
+  const topTags = useMemo(() => frecuencias(registros, 6), [registros]);
+  const distribution = useMemo(() => distribucion(registros), [registros]);
+  const bestWeekday = useMemo(() => mejorDiaSemana(registros), [registros]);
 
   return (
     <ScreenContainer scroll contentStyle={styles.content}>
@@ -55,11 +54,11 @@ export const EstadisticasScreen: React.FC = () => {
               <Text style={[typography.caption, styles.statLabel]}>{t('stats.avgMood')}</Text>
             </Card>
             <Card style={styles.summaryCard}>
-              <Text style={[typography.statNumber, styles.statNumber]}>{totalEntries}</Text>
+              <Text style={[typography.statNumber, styles.statNumber]}>{diasRegistrados}</Text>
               <Text style={[typography.caption, styles.statLabel]}>{t('stats.totalEntries')}</Text>
             </Card>
             <Card style={styles.summaryCard}>
-              <Text style={[typography.statNumber, styles.statNumber]}>🔥{longestStreak}</Text>
+              <Text style={[typography.statNumber, styles.statNumber]}>🔥{rachaMaxima}</Text>
               <Text style={[typography.caption, styles.statLabel]}>{t('stats.longestStreak')}</Text>
             </Card>
           </View>
@@ -81,9 +80,9 @@ export const EstadisticasScreen: React.FC = () => {
               <Text style={[typography.caption, styles.cardDesc]}>{t('stats.bestWeekdayDesc')}</Text>
               <View style={styles.weekdayRow}>
                 <Text style={[typography.displayM, styles.weekdayName]}>
-                  {weekdayName(bestWeekday.weekday, language)}
+                  {weekdayName(bestWeekday.diaSemana, language)}
                 </Text>
-                <Text style={[typography.title, styles.weekdayAvg]}>{bestWeekday.avg.toFixed(1)} ★</Text>
+                <Text style={[typography.title, styles.weekdayAvg]}>{bestWeekday.promedio.toFixed(1)} ★</Text>
               </View>
             </Card>
           )}
@@ -92,7 +91,7 @@ export const EstadisticasScreen: React.FC = () => {
             <Card style={styles.card}>
               <Text style={[typography.subtitle, styles.cardTitle]}>{t('stats.loggingTime')}</Text>
               <Text style={[typography.caption, styles.cardDesc]}>{t('stats.loggingTimeDesc')}</Text>
-              <Text style={styles.bucketEmoji}>{BUCKET_LABEL[bucket]}</Text>
+              <Text style={styles.bucketEmoji}>{ICONOS_FRANJA[bucket]}</Text>
             </Card>
           )}
 
@@ -100,17 +99,17 @@ export const EstadisticasScreen: React.FC = () => {
             <Card style={styles.card}>
               <Text style={[typography.subtitle, styles.cardTitle]}>{t('stats.topTags')}</Text>
               {topTags.map((tag) => (
-                <View key={tag.id} style={styles.tagRow}>
-                  <Text style={[typography.body, styles.tagLabel]}>{t(getOptionLabelKey(tag.id))}</Text>
+                <View key={tag.clave} style={styles.tagRow}>
+                  <Text style={[typography.body, styles.tagLabel]}>{t(claveTraduccionEtiqueta(tag.clave))}</Text>
                   <View style={styles.tagBarTrack}>
                     <View
                       style={[
                         styles.tagBarFill,
-                        { width: `${Math.min(100, (tag.count / topTags[0].count) * 100)}%` },
+                        { width: `${Math.min(100, (tag.cantidad / topTags[0].cantidad) * 100)}%` },
                       ]}
                     />
                   </View>
-                  <Text style={[typography.caption, styles.tagCount]}>{tag.count}</Text>
+                  <Text style={[typography.caption, styles.tagCount]}>{tag.cantidad}</Text>
                 </View>
               ))}
             </Card>
@@ -121,16 +120,16 @@ export const EstadisticasScreen: React.FC = () => {
               <Text style={[typography.subtitle, styles.cardTitle]}>{t('stats.moodByHabit')}</Text>
               <Text style={[typography.caption, styles.cardDesc]}>{t('stats.moodByHabitDesc')}</Text>
               {topTags.slice(0, 4).map((tag) => {
-                const comparison = computeMoodByOption(entries, tag.id);
+                const comparison = animoConEtiqueta(registros, tag.clave);
                 if (!comparison) return null;
                 const diff = (
-                  ((comparison.withOption - comparison.overall) / comparison.overall) *
+                  ((comparison.conEtiqueta - comparison.general) / comparison.general) *
                   100
                 ).toFixed(0);
-                const positive = comparison.withOption >= comparison.overall;
+                const positive = comparison.conEtiqueta >= comparison.general;
                 return (
-                  <View key={tag.id} style={styles.habitRow}>
-                    <Text style={[typography.body, styles.tagLabel]}>{t(getOptionLabelKey(tag.id))}</Text>
+                  <View key={tag.clave} style={styles.habitRow}>
+                    <Text style={[typography.body, styles.tagLabel]}>{t(claveTraduccionEtiqueta(tag.clave))}</Text>
                     <Text style={[typography.bodyMedium, positive ? styles.diffPositive : styles.diffNegative]}>
                       {positive ? '+' : ''}
                       {diff}%

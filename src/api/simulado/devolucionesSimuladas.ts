@@ -1,38 +1,36 @@
 /**
- * Todo lo de acá adentro es MOCK — imita lo que devolvería un modelo de
- * lenguaje real para poder mostrar la funcionalidad completa sin depender
- * todavía de una API. El día que se conecte un modelo real (Anthropic u
- * otro), estas tres funciones son las únicas que hay que reemplazar: la
- * firma (qué reciben, qué devuelven) puede quedar igual.
+ * Devoluciones de IA simuladas. Imitan lo que va a devolver el servidor para
+ * poder mostrar la funcionalidad completa sin depender todavía de Claude.
+ * En la iteración 5 se reemplazan por POST /devoluciones/actual (con el
+ * servidor simulado detrás de ApiClient mientras no exista el real).
  */
-import { subDays } from 'date-fns';
-import { DayEntry, EntriesByDate, Language, MoodLevel } from '@/types/models';
-import { ALL_OPTIONS, getOptionCategoryIcon, getOptionLabelKey } from '@/datos/catalogoBloques';
-import { computeMoodByOption } from '@/servicios/MotorEstadistico';
+import { parseISO, subDays } from 'date-fns';
+import { Idioma, NivelAnimo, RegistroDiario } from '@/dominio';
+import { claveTraduccionEtiqueta, iconoDeEtiqueta, TODAS_LAS_ETIQUETAS } from '@/datos/catalogoBloques';
+import { animoConEtiqueta } from '@/servicios/MotorEstadistico';
 
-const inLastNDays = (entries: DayEntry[], n: number): DayEntry[] => {
+const inLastNDays = (registros: RegistroDiario[], n: number): RegistroDiario[] => {
   const cutoff = subDays(new Date(), n);
-  return entries.filter((e) => new Date(e.date) >= cutoff);
+  return registros.filter((r) => parseISO(r.fecha) >= cutoff);
 };
 
-const average = (list: DayEntry[]): number | null =>
-  list.length === 0 ? null : list.reduce((sum, e) => sum + e.mood, 0) / list.length;
+const average = (list: RegistroDiario[]): number | null =>
+  list.length === 0 ? null : list.reduce((sum, r) => sum + r.nivelAnimo, 0) / list.length;
 
-const mostFrequentOptionLabel = (list: DayEntry[], t: (k: string) => string): string | null => {
+const mostFrequentOptionLabel = (list: RegistroDiario[], t: (k: string) => string): string | null => {
   const counts = new Map<string, number>();
-  list.forEach((e) => e.selectedOptions.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1)));
+  list.forEach((r) => r.etiquetas.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1)));
   if (counts.size === 0) return null;
   const [topId] = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];
-  return t(getOptionLabelKey(topId));
+  return t(claveTraduccionEtiqueta(topId));
 };
 
 /** Resumen de "cómo venís" — compara los últimos 7 días contra los 7 anteriores. */
 export function generateAiSummary(
-  entries: EntriesByDate,
+  all: RegistroDiario[],
   streak: number,
   t: (key: string) => string
 ): string | null {
-  const all = Object.values(entries);
   if (all.length < 3) return null;
 
   const last7 = inLastNDays(all, 7);
@@ -66,7 +64,7 @@ interface MockPlaylist {
   subtitle: string;
 }
 
-const PLAYLISTS_BY_MOOD: Record<MoodLevel, { es: MockPlaylist[]; en: MockPlaylist[] }> = {
+const PLAYLISTS_BY_MOOD: Record<NivelAnimo, { es: MockPlaylist[]; en: MockPlaylist[] }> = {
   1: {
     es: [
       { title: 'Soltar la bronca', subtitle: 'Rock crudo para descargar' },
@@ -120,16 +118,15 @@ const PLAYLISTS_BY_MOOD: Record<MoodLevel, { es: MockPlaylist[]; en: MockPlaylis
 };
 
 export function generateRecommendedPlaylists(
-  entries: EntriesByDate,
-  language: Language
+  all: RegistroDiario[],
+  language: Idioma
 ): MockPlaylist[] {
-  const all = Object.values(entries);
   const recent = inLastNDays(all, 7);
   const source = recent.length > 0 ? recent : all;
   if (source.length === 0) return PLAYLISTS_BY_MOOD[3][language];
 
   const avg = average(source)!;
-  const level = Math.min(5, Math.max(1, Math.round(avg))) as MoodLevel;
+  const level = Math.min(5, Math.max(1, Math.round(avg))) as NivelAnimo;
   return PLAYLISTS_BY_MOOD[level][language];
 }
 
@@ -144,42 +141,41 @@ export interface RecommendedHabit {
 const GENERIC_HABITS_KEYS = ['descanso.dormiBien', 'ejercicio.camine', 'gente.saliConAmigos'];
 
 export function generateRecommendedHabits(
-  entries: EntriesByDate,
+  all: RegistroDiario[],
   t: (key: string) => string
 ): RecommendedHabit[] {
-  const all = Object.values(entries);
 
   if (all.length < 5) {
     return GENERIC_HABITS_KEYS.map((id) => ({
-      label: t(getOptionLabelKey(id)),
+      label: t(claveTraduccionEtiqueta(id)),
       reason: t('ai.habits.genericReason'),
-      icon: getOptionCategoryIcon(id),
+      icon: iconoDeEtiqueta(id),
       percent: null,
     }));
   }
 
-  const scored = ALL_OPTIONS.map((option) => {
-    const comparison = computeMoodByOption(entries, option.id);
+  const scored = TODAS_LAS_ETIQUETAS.map((etiqueta) => {
+    const comparison = animoConEtiqueta(all, etiqueta.clave);
     if (!comparison) return null;
-    return { option, diff: comparison.withOption - comparison.overall };
+    return { clave: etiqueta.clave, diff: comparison.conEtiqueta - comparison.general };
   })
-    .filter((x): x is { option: (typeof ALL_OPTIONS)[number]; diff: number } => x !== null && x.diff > 0.15)
+    .filter((x): x is { clave: string; diff: number } => x !== null && x.diff > 0.15)
     .sort((a, b) => b.diff - a.diff)
     .slice(0, 4);
 
   if (scored.length === 0) {
     return GENERIC_HABITS_KEYS.map((id) => ({
-      label: t(getOptionLabelKey(id)),
+      label: t(claveTraduccionEtiqueta(id)),
       reason: t('ai.habits.genericReason'),
-      icon: getOptionCategoryIcon(id),
+      icon: iconoDeEtiqueta(id),
       percent: null,
     }));
   }
 
-  return scored.map(({ option, diff }) => ({
-    label: t(option.labelKey),
+  return scored.map(({ clave, diff }) => ({
+    label: t(claveTraduccionEtiqueta(clave)),
     reason: t('ai.habits.correlationReason').replace('{percent}', Math.round(diff * 20).toString()),
-    icon: getOptionCategoryIcon(option.id),
+    icon: iconoDeEtiqueta(clave),
     percent: Math.round(diff * 20),
   }));
 }

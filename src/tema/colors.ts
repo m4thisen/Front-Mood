@@ -1,3 +1,5 @@
+import { NivelAnimo } from '@/dominio/tipos';
+
 /**
  * Mood — sistema de color v3
  *
@@ -56,14 +58,12 @@ export const moodScale = [
 
 export const emptyDayColor = 'rgba(210, 214, 230, 0.06)';
 
-export type MoodLevel = 1 | 2 | 3 | 4 | 5;
-
-export const getMoodColor = (level: MoodLevel | undefined): string => {
+export const getMoodColor = (level: NivelAnimo | undefined): string => {
   if (!level) return emptyDayColor;
   return moodScale[level - 1].color;
 };
 
-export const getMoodGlow = (level: MoodLevel | undefined): string => {
+export const getMoodGlow = (level: NivelAnimo | undefined): string => {
   if (!level) return 'transparent';
   return moodScale[level - 1].glow;
 };

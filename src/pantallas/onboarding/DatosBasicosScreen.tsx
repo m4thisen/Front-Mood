@@ -2,40 +2,39 @@ import React, { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { GlowButton } from '@/componentes/GlowButton';
 import { BlockChip } from '@/componentes/BlockChip';
 import { StepDots } from '@/componentes/StepDots';
 import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
-import { useApp } from '@/context/AppContext';
+import { useSesionStore } from '@/stores/SesionStore';
 import { RootStackParamList } from '@/navegacion/tipos';
-import { Gender } from '@/types/models';
+import { calcularEdad, Genero, GENEROS } from '@/dominio';
 import { dateLocale, toISODate } from '@/utils/fecha';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DatosBasicos'>;
 
-const GENDERS: Gender[] = ['female', 'male', 'nonbinary', 'prefer_not_to_say'];
-
 export const DatosBasicosScreen: React.FC<Props> = ({ navigation }) => {
   const { t, language } = useTranslation();
-  const { profile, updateProfile } = useApp();
+  const usuario = useSesionStore((s) => s.usuario);
+  const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
 
-  const [name, setName] = useState(profile?.name ?? '');
+  const [name, setName] = useState(usuario?.nombre ?? '');
   const [birthDate, setBirthDate] = useState<Date | null>(
-    profile?.birthDate ? new Date(profile.birthDate) : null
+    usuario?.fechaNacimiento ? parseISO(usuario.fechaNacimiento) : null
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [gender, setGender] = useState<Gender>(profile?.gender ?? 'prefer_not_to_say');
+  const [gender, setGender] = useState<Genero>(usuario?.genero ?? 'PREFIERO_NO_DECIR');
 
   const canContinue = name.trim().length > 0 && birthDate !== null;
 
-  const handleContinue = () => {
-    updateProfile({
-      name: name.trim(),
-      birthDate: birthDate ? toISODate(birthDate) : '',
-      gender,
+  const handleContinue = async () => {
+    await actualizarPreferencias({
+      nombre: name.trim(),
+      fechaNacimiento: birthDate ? toISODate(birthDate) : '',
+      genero: gender,
     });
     navigation.navigate('Bloques');
   };
@@ -72,6 +71,11 @@ export const DatosBasicosScreen: React.FC<Props> = ({ navigation }) => {
               : t('register.birthDatePlaceholder')}
           </Text>
         </Pressable>
+        {birthDate && (
+          <Text style={[typography.caption, styles.age]}>
+            {t('register.age').replace('{edad}', String(calcularEdad(toISODate(birthDate))))}
+          </Text>
+        )}
 
         {showDatePicker && (
           <View style={Platform.OS === 'ios' ? styles.iosPickerWrap : undefined}>
@@ -99,7 +103,7 @@ export const DatosBasicosScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.field}>
         <Text style={[typography.caption, styles.label]}>{t('register.gender')}</Text>
         <View style={styles.chipsRow}>
-          {GENDERS.map((g) => (
+          {GENEROS.map((g) => (
             <BlockChip
               key={g}
               label={t(`register.gender.${g}`)}
@@ -166,6 +170,10 @@ const styles = StyleSheet.create({
   },
   pickerPlaceholder: {
     color: colors.textTertiary,
+  },
+  age: {
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   iosPickerWrap: {
     backgroundColor: colors.surface,

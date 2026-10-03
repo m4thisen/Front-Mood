@@ -6,13 +6,13 @@ import { colors, radius, spacing, typography } from '@/tema';
 import { getMoodColor, getMoodGlow } from '@/tema/colors';
 import { shade } from '@/utils/color';
 import { getMonthGrid, monthLabel, toISODate, weekdayLabels } from '@/utils/fecha';
-import { EntriesByDate, Language } from '@/types/models';
+import { Idioma, RegistroDiario } from '@/dominio';
 
 interface Props {
   year: number;
   month: number; // 0-indexed
-  entries: EntriesByDate;
-  language: Language;
+  registros: Record<string, RegistroDiario>;
+  language: Idioma;
   onSelectDay: (iso: string) => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
@@ -22,7 +22,7 @@ interface Props {
 export const HeatmapCalendar: React.FC<Props> = ({
   year,
   month,
-  entries,
+  registros,
   language,
   onSelectDay,
   onPrevMonth,
@@ -90,10 +90,10 @@ export const HeatmapCalendar: React.FC<Props> = ({
           {week.map((day) => {
             const inMonth = isSameMonth(day, monthDate);
             const iso = toISODate(day);
-            const entry = entries[iso];
+            const entry = registros[iso];
             const hasEntry = Boolean(entry) && inMonth;
-            const color = getMoodColor(entry?.mood);
-            const glow = getMoodGlow(entry?.mood);
+            const color = getMoodColor(entry?.nivelAnimo);
+            const glow = getMoodGlow(entry?.nivelAnimo);
             const today = isToday(day);
 
             return (
@@ -135,7 +135,7 @@ export const HeatmapCalendar: React.FC<Props> = ({
                     {inMonth ? day.getDate() : ''}
                   </Text>
                 </View>
-                {entry?.favorite && inMonth && <Text style={styles.favoriteBadge}>⭐</Text>}
+                {entry?.destacado && inMonth && <Text style={styles.favoriteBadge}>⭐</Text>}
               </Pressable>
             );
           })}

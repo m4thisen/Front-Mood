@@ -1,60 +1,85 @@
+/**
+ * ExportService — «servicio» en el diagrama de clases de la aplicación móvil.
+ * Genera el historial completo en CSV o PDF dentro del dispositivo, sin pasar
+ * por el servidor, y lo entrega al menú de compartir del sistema (CU-23).
+ * El diseño final del PDF se completa en la iteración 6.
+ */
 import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
-import { EntriesByDate, UserProfile } from '@/types/models';
+import * as Sharing from 'expo-sharing';
+import { RegistroDiario, TagPersonalizado, Usuario } from '@/dominio';
 
-const csvEscape = (value: string): string => `"${value.replace(/"/g, '""')}"`;
+const escaparCsv = (valor: string): string => `"${valor.replace(/"/g, '""')}"`;
+const escaparHtml = (valor: string): string =>
+  valor.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-function buildCsv(entries: EntriesByDate): string {
-  const header = [
-    'date',
-    'mood',
-    'note',
-    'loggedAtHour',
-    'selectedOptions',
-    'song',
-    'weather',
-    'exerciseMinutes',
-    'sleepHours',
-  ];
-  const rows = Object.values(entries)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .map((e) =>
-      [
-        e.date,
-        String(e.mood),
-        csvEscape(e.note ?? ''),
-        String(e.loggedAtHour),
-        csvEscape(e.selectedOptions.join('; ')),
-        csvEscape(e.song ?? ''),
-        e.weather ?? '',
-        e.exerciseMinutes?.toString() ?? '',
-        e.sleepHours?.toString() ?? '',
-      ].join(',')
-    );
-  return [header.join(','), ...rows].join('\n');
+const ordenarPorFecha = (registros: RegistroDiario[]) =>
+  [...registros].sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+function describirTags(registro: RegistroDiario, tags: TagPersonalizado[]): string {
+  return Object.entries(registro.valoresTags)
+    .map(([id, valor]) => {
+      const nombre = tags.find((t) => t.id === id)?.nombre ?? id;
+      return typeof valor === 'boolean' ? (valor ? nombre : null) : `${nombre}: ${valor}`;
+    })
+    .filter((v): v is string => v !== null && v !== '')
+    .join('; ');
 }
 
-export async function exportEntriesAsCsv(entries: EntriesByDate): Promise<void> {
-  const csv = buildCsv(entries);
-  const file = new File(Paths.cache, `mood-export-${Date.now()}.csv`);
-  file.create({ overwrite: true });
-  file.write(csv);
+const describirCancion = (registro: RegistroDiario): string =>
+  registro.cancion ? [registro.cancion.titulo, registro.cancion.artista].filter(Boolean).join(' — ') : '';
+
+function armarCsv(registros: RegistroDiario[], tags: TagPersonalizado[]): string {
+  const encabezado = [
+    'fecha',
+    'nivel_animo',
+    'destacado',
+    'texto',
+    'climas',
+    'horas_sueno',
+    'minutos_ejercicio',
+    'etiquetas',
+    'tags_personalizados',
+    'cancion',
+    'hora_carga',
+  ];
+  const filas = ordenarPorFecha(registros).map((r) =>
+    [
+      r.fecha,
+      String(r.nivelAnimo),
+      r.destacado ? 'si' : 'no',
+      escaparCsv(r.texto),
+      r.climas.join('; '),
+      r.horasSueno?.toString() ?? '',
+      r.minutosEjercicio?.toString() ?? '',
+      escaparCsv(r.etiquetas.join('; ')),
+      escaparCsv(describirTags(r, tags)),
+      escaparCsv(describirCancion(r)),
+      r.horaCarga,
+    ].join(',')
+  );
+  return [encabezado.join(','), ...filas].join('\n');
+}
+
+export async function exportarCSV(registros: RegistroDiario[], tags: TagPersonalizado[]): Promise<void> {
+  const archivo = new File(Paths.cache, `mood-historial-${Date.now()}.csv`);
+  archivo.create({ overwrite: true });
+  archivo.write(armarCsv(registros, tags));
   if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: 'Mood — export' });
+    await Sharing.shareAsync(archivo.uri, { mimeType: 'text/csv', dialogTitle: 'Mood' });
   }
 }
 
-function buildHtml(entries: EntriesByDate, profile: UserProfile | null): string {
-  const rows = Object.values(entries)
-    .sort((a, b) => a.date.localeCompare(b.date))
+function armarHtml(registros: RegistroDiario[], usuario: Usuario | null, tags: TagPersonalizado[]): string {
+  const filas = ordenarPorFecha(registros)
     .map(
-      (e) => `
+      (r) => `
       <tr>
-        <td>${e.date}</td>
-        <td>${e.mood}</td>
-        <td>${(e.note ?? '').replace(/</g, '&lt;')}</td>
-        <td>${e.selectedOptions.join(', ')}</td>
+        <td>${r.fecha}</td>
+        <td>${r.nivelAnimo}${r.destacado ? ' ⭐' : ''}</td>
+        <td>${escaparHtml(r.texto)}</td>
+        <td>${escaparHtml(r.etiquetas.join(', '))}</td>
+        <td>${escaparHtml(describirTags(r, tags))}</td>
       </tr>`
     )
     .join('');
@@ -63,26 +88,26 @@ function buildHtml(entries: EntriesByDate, profile: UserProfile | null): string 
     <html>
       <head><meta charset="utf-8" /></head>
       <body style="font-family: -apple-system, sans-serif; padding: 24px; color: #0B1120;">
-        <h1>Mood — ${profile?.name ?? ''}</h1>
-        <p>Exportado el ${new Date().toLocaleDateString()}</p>
+        <h1>Mood — ${escaparHtml(usuario?.nombre ?? '')}</h1>
+        <p>${registros.length} días registrados · exportado el ${new Date().toLocaleDateString()}</p>
         <table style="width:100%; border-collapse: collapse;" border="1" cellpadding="8">
           <thead>
-            <tr><th>Fecha</th><th>Ánimo</th><th>Nota</th><th>Tags</th></tr>
+            <tr><th>Fecha</th><th>Ánimo</th><th>Texto</th><th>Etiquetas</th><th>Tags</th></tr>
           </thead>
-          <tbody>${rows}</tbody>
+          <tbody>${filas}</tbody>
         </table>
       </body>
     </html>
   `;
 }
 
-export async function exportEntriesAsPdf(
-  entries: EntriesByDate,
-  profile: UserProfile | null
+export async function exportarPDF(
+  registros: RegistroDiario[],
+  usuario: Usuario | null,
+  tags: TagPersonalizado[]
 ): Promise<void> {
-  const html = buildHtml(entries, profile);
-  const { uri } = await Print.printToFileAsync({ html });
+  const { uri } = await Print.printToFileAsync({ html: armarHtml(registros, usuario, tags) });
   if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Mood — export' });
+    await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Mood' });
   }
 }

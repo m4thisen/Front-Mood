@@ -1,88 +1,82 @@
-# Mood — diario emocional (boceto v1)
+# Mood — aplicación móvil
 
-Base de la app en React Native (Expo + TypeScript), armada según lo conversado:
-onboarding completo (bienvenida → registro → bloques → bloques especiales →
-hora de notificación) y la app principal con 4 tabs (Calendario/heatmap,
-Estadísticas, Hoy, Mi cuenta) + el detalle de día como modal.
+Diario emocional offline-first. Trabajo Final de Grado — Ingeniería en
+Informática, Universidad del CEMA. Autor: Matías Nahuel Casullo. Tutor:
+Ing. Gastón Addati.
 
-**No incluye todavía:** backend, análisis por IA, ni integración real con la
-API de Spotify (el campo "canción del día" es texto libre por ahora). Todo se
-guarda localmente en el dispositivo con AsyncStorage.
+Este repositorio contiene **la aplicación móvil** (React Native + Expo +
+TypeScript). El servidor (Node.js + Express + PostgreSQL) vive en un
+repositorio aparte.
 
-## ⚠️ Importante: no pude correrlo yo mismo
+## Arquitectura
 
-El entorno donde armé este proyecto no tiene acceso a internet, así que no
-pude ejecutar `npm install` ni levantar el servidor de Expo para mostrarte
-una preview funcionando. Repasé el código a mano buscando bugs obvios
-(imports rotos, lógica de fechas, etc.), pero **no está probado en un
-dispositivo real todavía** — es esperable que aparezcan uno o dos errores
-menores la primera vez que lo corras. Pegame el error si pasa y lo arreglamos
-al toque.
-
-## Cómo correrlo
-
-Necesitás [Node.js](https://nodejs.org) (18+) y la app **Expo Go** instalada
-en tu celular (disponible en App Store / Play Store).
-
-```bash
-cd mood-app
-npm install
-npx expo start
-```
-
-Si al arrancar Expo te avisa que alguna librería nativa (reanimated,
-gesture-handler, screens, safe-area-context, etc.) tiene una versión que no
-coincide exactamente con tu SDK de Expo instalado, corré:
-
-```bash
-npx expo install --fix
-```
-
-Eso ajusta automáticamente las versiones a las que corresponden. Puse
-versiones típicas de Expo SDK 51 a mano (sin poder verificarlas contra el
-registry desde acá), así que es el paso más probable que necesites.
-
-Esto te va a mostrar un código QR en la terminal:
-
-- **Android:** abrí la app Expo Go y escaneá el QR.
-- **iOS:** escaneá el QR con la cámara del iPhone (te va a ofrecer abrirlo en Expo Go).
-
-También podés apretar `w` en la terminal para abrirlo en el navegador,
-aunque como es una app pensada 100% para mobile, algunas cosas (notificaciones,
-compartir archivos) no van a funcionar ahí.
-
-## Estructura del proyecto
+La app sigue el diagrama de clases de la aplicación móvil: cada capa depende
+solo de la de abajo.
 
 ```
 src/
-  theme/        → colores, tipografía, espaciado (design tokens)
-  types/        → tipos de datos (UserProfile, DayEntry, etc.)
-  data/         → categorías de bloques y sus opciones
-  i18n/         → textos en español/inglés
-  storage/      → persistencia con AsyncStorage
-  context/      → estado global de la app (AppContext)
-  navigation/   → stack raíz + tabs
-  components/   → piezas reutilizables (botones, cards, el heatmap, etc.)
-  screens/
-    onboarding/ → Welcome, Register, BlocksSelection, SpecialBlocks, NotificationTime
-    main/       → Calendar, Stats, TodayEntry, Account
-    DayDetailScreen.tsx (modal)
+  pantallas/      «frontera»    lo que ve el usuario (Bienvenida, Inicio, Registro, …)
+  stores/         «control»     estado y coordinación (SesionStore, RegistroStore) — Zustand
+  servicios/      «servicio»    lógica: MotorEstadistico, CalculadoraProgreso, ExportService, …
+  persistencia/   «persistencia» base local del dispositivo (fuente de verdad)
+  api/            comunicación con el servidor (por ahora, respuestas simuladas)
+  dominio/        entidades y reglas de negocio (RegistroDiario, Usuario, …)
+  componentes/    piezas visuales reutilizables
+  navegacion/  datos/  tema/  i18n/  utils/
 ```
 
-## Dirección de diseño
+- El motor estadístico, la racha y el Color del Alma corren **en el
+  dispositivo**, sin conexión.
+- Las claves de servicios externos (Google, Claude, Spotify) **nunca** van
+  en la app: solo el servidor habla con esos servicios.
+- Todos los textos están en español e inglés (`src/i18n`).
 
-Concepto: **"tu cielo nocturno emocional"**. Fondo azul-noche profundo
-(nunca negro puro), los moods funcionan como estrellas de distintos colores,
-y el "Color del Alma" es un orbe que respira lentamente combinando todos
-los colores registrados — es el elemento distintivo de la app. Tipografía:
-Fraunces (serif cálida, para títulos) + Manrope (para todo lo demás).
+## Requisitos
 
-## Qué falta / próximos pasos sugeridos
+- Node.js LTS y npm
+- macOS con Xcode y [CocoaPods](https://cocoapods.org) (`brew install cocoapods`)
+- Un iPhone o el simulador de iOS
 
-- Conectar un backend real (guardar usuarios y entradas en la nube)
-- Reemplazar el campo de texto libre de "canción del día" por una búsqueda
-  real contra la API de Spotify
-- Resumen semanal y notas del día generadas por IA (llamando a un modelo
-  de lenguaje con el resumen de la semana como contexto)
-- Autenticación real con Google (hoy el botón solo marca `isLoggedIn: true`)
-- Reemplazar los selectores de hora "chips horizontales" por un time picker nativo
+El inicio de sesión con Google necesita código nativo, así que la app se
+prueba con un **development build**, no con Expo Go.
+
+## Cómo correrla
+
+```bash
+npm install
+npx expo run:ios
+```
+
+La primera vez compila la app nativa (tarda varios minutos). Las siguientes
+veces alcanza con `npx expo start` y abrir la app ya instalada.
+
+Si cambiás dependencias nativas o `app.json`, regenerá el proyecto de iOS:
+
+```bash
+npx expo prebuild --platform ios --clean
+```
+
+## Scripts
+
+| Comando | Qué hace |
+|---|---|
+| `npm run typecheck` | Verifica los tipos de TypeScript (modo estricto) |
+| `npm test` | Corre las pruebas unitarias (Jest) |
+| `npm run ios` | Compila e instala la app en iOS |
+
+## Estado
+
+Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
+
+- [x] **Iteración 0 — Base del proyecto**: Expo SDK 57, estructura por capas,
+  entidades, stores, navegación, i18n, Jest.
+- [ ] Iteración 1 — Acceso y configuración (login con Google, sesiones)
+- [ ] Iteración 2 — Registro diario (SQLite, recordatorio)
+- [ ] Iteración 3 — Sincronización
+- [ ] Iteración 4 — Visualización y análisis
+- [ ] Iteración 5 — Música e IA
+- [ ] Iteración 6 — Portabilidad y terminación
+
+Mientras el servidor no exista, la identidad, la IA y la música se simulan
+dentro de la app. Los datos se guardan provisoriamente en AsyncStorage y
+pasan a SQLite en la iteración 2.

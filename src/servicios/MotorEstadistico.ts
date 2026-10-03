@@ -82,8 +82,8 @@ export function frecuencias(registros: RegistroDiario[], limite = 5): Frecuencia
 export function animoConEtiqueta(
   registros: RegistroDiario[],
   claveEtiqueta: string
-): { conEtiqueta: number; general: number } | null {
+): { conEtiqueta: number; general: number; dias: number } | null {
   const con = registros.filter((r) => r.etiquetas.includes(claveEtiqueta));
   if (con.length === 0) return null;
-  return { conEtiqueta: promedio(con)!, general: promedio(registros)! };
+  return { conEtiqueta: promedio(con)!, general: promedio(registros)!, dias: con.length };
 }

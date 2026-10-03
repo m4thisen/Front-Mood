@@ -72,6 +72,8 @@ const ICONOS = {
   franjaNoche: { ios: 'sunset', iosRelleno: 'sunset.fill', android: 'wb_twilight' },
   franjaMadrugada: { ios: 'moon.stars', iosRelleno: 'moon.stars.fill', android: 'nights_stay' },
   tendencia: { ios: 'chart.line.uptrend.xyaxis', android: 'trending_up' },
+  subida: { ios: 'arrow.up', android: 'arrow_upward' },
+  bajada: { ios: 'arrow.down', android: 'arrow_downward' },
 
   // Cómo venís
   ia: { ios: 'sparkles', android: 'auto_awesome' },

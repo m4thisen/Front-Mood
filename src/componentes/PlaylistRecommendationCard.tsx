@@ -1,119 +1,87 @@
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Card } from './Card';
+import { Icono } from './Icono';
 import { colors, radius, spacing, typography } from '@/tema';
 import { shade } from '@/utils/color';
 import { useTranslation } from '@/i18n';
 import { useIndicadoresProgreso, useListaRegistros } from '@/stores/RegistroStore';
 import { generateRecommendedPlaylists } from '@/api/simulado/devolucionesSimuladas';
 
-const COVER_SIZE = 116;
-const NOTE_ICONS = ['🎵', '🎧', '🎶', '🎼'];
+const TAMANO_PORTADA = 136;
 
 /**
- * Playlists sugeridas según el ánimo reciente, en carrusel horizontal con
- * "portada" generada (degradé del color del mood + ícono) — mock hasta que
- * se conecte la API real de Spotify, pero ya se ve como una feature real.
+ * Música para tu momento (RF-24), en carrusel horizontal. Las portadas se
+ * generan con el Color del Alma hasta que, en la iteración 5, lleguen las
+ * canciones reales resueltas en Spotify.
  */
 export const PlaylistRecommendationCard: React.FC = () => {
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
   const registros = useListaRegistros();
   const { colorDelAlma } = useIndicadoresProgreso();
 
-  const playlists = useMemo(() => generateRecommendedPlaylists(registros, language), [registros, language]);
-  const baseColor = colorDelAlma ?? colors.accent;
+  const sugerencias = useMemo(() => generateRecommendedPlaylists(registros, language), [registros, language]);
+  const base = colorDelAlma ?? colors.accent;
 
   return (
-    <Card style={styles.card}>
-      <View style={styles.headerRow}>
-        <Text style={[typography.subtitle, styles.title]}>🎧 {t('ai.playlistsTitle')}</Text>
-        <View style={styles.badge}>
-          <Text style={[typography.micro, styles.badgeText]}>{t('ai.playlistsBadge')}</Text>
-        </View>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.carousel}
-      >
-        {playlists.map((playlist, i) => {
-          const tint = shade(baseColor, (i % 2 === 0 ? 1 : -1) * (0.1 + i * 0.08));
-          return (
-            <View key={i} style={styles.item}>
-              <LinearGradient
-                colors={[shade(tint, 0.25), tint, shade(tint, -0.35)]}
-                start={{ x: 0.15, y: 0 }}
-                end={{ x: 0.9, y: 1 }}
-                style={styles.cover}
-              >
-                <Text style={styles.coverIcon}>{NOTE_ICONS[i % NOTE_ICONS.length]}</Text>
-              </LinearGradient>
-              <Text style={[typography.bodyMedium, styles.itemTitle]} numberOfLines={1}>
-                {playlist.title}
-              </Text>
-              <Text style={[typography.caption, styles.itemSubtitle]} numberOfLines={2}>
-                {playlist.subtitle}
-              </Text>
-            </View>
-          );
-        })}
-      </ScrollView>
-    </Card>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.carrusel}
+      style={styles.desborde}
+    >
+      {sugerencias.map((sugerencia, i) => {
+        const tono = shade(base, (i % 2 === 0 ? 1 : -1) * (0.08 + i * 0.07));
+        return (
+          <View key={sugerencia.title} style={styles.item}>
+            <LinearGradient
+              colors={[shade(tono, 0.3), tono, shade(tono, -0.4)]}
+              start={{ x: 0.1, y: 0 }}
+              end={{ x: 0.9, y: 1 }}
+              style={styles.portada}
+            >
+              <Icono nombre="musica" tamano={30} color="rgba(255,255,255,0.92)" peso="semibold" />
+            </LinearGradient>
+            <Text style={[typography.bodyMedium, styles.titulo]} numberOfLines={1}>
+              {sugerencia.title}
+            </Text>
+            <Text style={[typography.footnote, styles.subtitulo]} numberOfLines={2}>
+              {sugerencia.subtitle}
+            </Text>
+          </View>
+        );
+      })}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginBottom: spacing.md,
-    paddingHorizontal: 0,
-    paddingVertical: spacing.lg,
+  // El carrusel llega hasta los bordes de la pantalla, como en Apple Music.
+  desborde: {
+    marginHorizontal: -spacing.xl,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  title: {
-    color: colors.textPrimary,
-  },
-  badge: {
-    backgroundColor: colors.surfaceElevatedAlt,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-  },
-  badgeText: {
-    color: colors.textTertiary,
-  },
-  carousel: {
-    paddingHorizontal: spacing.lg,
+  carrusel: {
+    paddingHorizontal: spacing.xl,
+    gap: spacing.md,
   },
   item: {
-    width: COVER_SIZE,
-    marginRight: spacing.md,
+    width: TAMANO_PORTADA,
   },
-  cover: {
-    width: COVER_SIZE,
-    height: COVER_SIZE,
+  portada: {
+    width: TAMANO_PORTADA,
+    height: TAMANO_PORTADA,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.18)',
   },
-  coverIcon: {
-    fontSize: 34,
-  },
-  itemTitle: {
+  titulo: {
     color: colors.textPrimary,
     marginTop: spacing.sm,
   },
-  itemSubtitle: {
+  subtitulo: {
     color: colors.textTertiary,
-    marginTop: 2,
+    marginTop: 1,
   },
 });

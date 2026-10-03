@@ -146,6 +146,8 @@ const en: Record<string, string> = {
   'tab.account': 'Account',
 
   'howYouAre.title': "How you're doing",
+  'howYouAre.subtitle': "Today's check-in",
+  'howYouAre.weeklyNotice': 'Every Sunday you will get a more complete summary of your week.',
   'calendar.title': "This month's sky",
   'home.greetingMorning': 'Good morning, {nombre}',
   'home.greetingAfternoon': 'Good afternoon, {nombre}',
@@ -250,8 +252,10 @@ const en: Record<string, string> = {
   'dayDetail.weather': 'Weather',
   'dayDetail.loggedAt': 'Logged at {hora}',
 
-  'ai.summaryTitle': 'How you\'re doing',
+  'ai.summaryTitle': 'Your check-in',
   'ai.badge': 'AI-generated (mocked)',
+  'ai.badgeShort': 'AI · simulated',
+  'ai.privacy': 'Built from aggregated data about your days. Your notes never leave your phone.',
   'ai.noData': 'Log a few more days so the AI can put together a summary.',
   'ai.genericTag': 'what you logged',
   'ai.template.improving':
@@ -262,13 +266,13 @@ const en: Record<string, string> = {
     'Your mood stayed steady this week, averaging {avg}/5. You kept logging {tag} often.',
   'ai.template.streak': "You're on a {streak}-day streak — keep it up!",
 
-  'ai.playlistsTitle': 'Recommended playlists',
+  'ai.playlistsTitle': 'Music for right now',
   'ai.playlistsBadge': 'Based on your recent mood (mocked)',
 
-  'ai.habitsTitle': 'Recommended habits',
+  'ai.habitsTitle': 'Habits to keep up',
   'ai.habitsBadge': 'Based on your history (mocked)',
   'ai.habits.genericReason': 'Log it for a few days and you\'ll start seeing how it affects you.',
-  'ai.habits.correlationReason': 'On days you marked it, your mood was ~{percent}% higher.',
+  'ai.habits.correlationReason': 'Your mood was above your average on those days.',
 
   'today.favoriteToggle': 'Highlight this day',
   'today.favoriteToggleOn': 'Highlighted day',

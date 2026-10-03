@@ -6,7 +6,7 @@
  */
 import { parseISO, subDays } from 'date-fns';
 import { Idioma, NivelAnimo, RegistroDiario } from '@/dominio';
-import { claveTraduccionEtiqueta, iconoDeEtiqueta, TODAS_LAS_ETIQUETAS } from '@/datos/catalogoBloques';
+import { claveTraduccionEtiqueta, TODAS_LAS_ETIQUETAS } from '@/datos/catalogoBloques';
 import { animoConEtiqueta } from '@/servicios/MotorEstadistico';
 
 const inLastNDays = (registros: RegistroDiario[], n: number): RegistroDiario[] => {
@@ -17,12 +17,22 @@ const inLastNDays = (registros: RegistroDiario[], n: number): RegistroDiario[] =
 const average = (list: RegistroDiario[]): number | null =>
   list.length === 0 ? null : list.reduce((sum, r) => sum + r.nivelAnimo, 0) / list.length;
 
-const mostFrequentOptionLabel = (list: RegistroDiario[], t: (k: string) => string): string | null => {
+// La etiqueta más frecuente de la semana entre las que acompañan días mejores
+// que el promedio (para no decir "la tristeza te hace bien").
+const mostFrequentOptionLabel = (
+  list: RegistroDiario[],
+  all: RegistroDiario[],
+  t: (k: string) => string
+): string | null => {
   const counts = new Map<string, number>();
   list.forEach((r) => r.etiquetas.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1)));
-  if (counts.size === 0) return null;
-  const [topId] = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];
-  return t(claveTraduccionEtiqueta(topId));
+  const top = Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .find(([id]) => {
+      const comparacion = animoConEtiqueta(all, id);
+      return comparacion !== null && comparacion.conEtiqueta > comparacion.general;
+    });
+  return top ? t(claveTraduccionEtiqueta(top[0])) : null;
 };
 
 /** Resumen de "cómo venís" — compara los últimos 7 días contra los 7 anteriores. */
@@ -38,7 +48,7 @@ export function generateAiSummary(
 
   const avgLast = average(last7) ?? average(all)!;
   const avgPrev = average(prev7);
-  const topTag = mostFrequentOptionLabel(last7.length > 0 ? last7 : all, t);
+  const topTag = mostFrequentOptionLabel(last7.length > 0 ? last7 : all, all, t);
 
   let templateKey: 'ai.template.improving' | 'ai.template.declining' | 'ai.template.stable' =
     'ai.template.stable';
@@ -48,7 +58,7 @@ export function generateAiSummary(
   }
 
   let text = t(templateKey)
-    .replace('{avg}', avgLast.toFixed(1))
+    .replace('{avg}', avgLast.toFixed(1).replace('.', ','))
     .replace('{tag}', topTag ?? t('ai.genericTag'));
 
   if (streak >= 3) {
@@ -134,7 +144,8 @@ export function generateRecommendedPlaylists(
 export interface RecommendedHabit {
   label: string;
   reason: string;
-  icon: string;
+  /** Clave de la etiqueta: la pantalla elige el ícono. */
+  clave: string;
   percent: number | null; // null = todavía no hay suficiente dato para un %
 }
 
@@ -149,7 +160,7 @@ export function generateRecommendedHabits(
     return GENERIC_HABITS_KEYS.map((id) => ({
       label: t(claveTraduccionEtiqueta(id)),
       reason: t('ai.habits.genericReason'),
-      icon: iconoDeEtiqueta(id),
+      clave: id,
       percent: null,
     }));
   }
@@ -167,7 +178,7 @@ export function generateRecommendedHabits(
     return GENERIC_HABITS_KEYS.map((id) => ({
       label: t(claveTraduccionEtiqueta(id)),
       reason: t('ai.habits.genericReason'),
-      icon: iconoDeEtiqueta(id),
+      clave: id,
       percent: null,
     }));
   }
@@ -175,7 +186,7 @@ export function generateRecommendedHabits(
   return scored.map(({ clave, diff }) => ({
     label: t(claveTraduccionEtiqueta(clave)),
     reason: t('ai.habits.correlationReason').replace('{percent}', Math.round(diff * 20).toString()),
-    icon: iconoDeEtiqueta(clave),
+    clave,
     percent: Math.round(diff * 20),
   }));
 }

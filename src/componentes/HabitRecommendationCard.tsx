@@ -1,113 +1,83 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Card } from './Card';
+import { Icono } from './Icono';
+import { iconoDeEtiqueta } from './iconosDominio';
 import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { useListaRegistros } from '@/stores/RegistroStore';
 import { generateRecommendedHabits } from '@/api/simulado/devolucionesSimuladas';
 
 /**
- * Hábitos recomendados: si hay suficientes datos, ordena por correlación
- * real con mejor ánimo (usando animoConEtiqueta); si no, muestra
- * sugerencias genéricas. La parte de "generado por IA" es mock — la lógica
- * de correlación en sí ya es real, corre sobre los datos del usuario.
+ * Hábitos sugeridos dentro de la devolución. Si hay datos suficientes se
+ * ordenan por su relación con el ánimo; si no, se muestran sugerencias
+ * generales. La redacción es simulada hasta la iteración 5.
  */
 export const HabitRecommendationCard: React.FC = () => {
   const { t } = useTranslation();
   const registros = useListaRegistros();
-
-  const habits = useMemo(() => generateRecommendedHabits(registros, t), [registros, t]);
+  const habitos = useMemo(() => generateRecommendedHabits(registros, t), [registros, t]);
 
   return (
-    <Card style={styles.card}>
-      <View style={styles.headerRow}>
-        <Text style={[typography.subtitle, styles.title]}>🌱 {t('ai.habitsTitle')}</Text>
-        <View style={styles.badge}>
-          <Text style={[typography.micro, styles.badgeText]}>{t('ai.habitsBadge')}</Text>
-        </View>
-      </View>
-      {habits.map((habit, i) => (
-        <View key={i} style={[styles.row, i === habits.length - 1 && styles.rowLast]}>
-          <View style={styles.iconCircle}>
-            <Text style={styles.icon}>{habit.icon}</Text>
-          </View>
-          <View style={styles.rowText}>
-            <Text style={[typography.bodyMedium, styles.rowTitle]}>{habit.label}</Text>
-            <Text style={[typography.caption, styles.rowReason]}>{habit.reason}</Text>
-          </View>
-          {habit.percent !== null && (
-            <View style={styles.percentBadge}>
-              <Text style={[typography.bodyMedium, styles.percentText]}>+{habit.percent}%</Text>
+    <View style={styles.tarjeta}>
+      {habitos.map((habito, i) => (
+        <React.Fragment key={habito.clave}>
+          {i > 0 && <View style={styles.separador} />}
+          <View style={styles.fila}>
+            <View style={styles.cuadroIcono}>
+              <Icono nombre={iconoDeEtiqueta(habito.clave)} tamano={15} color="#FFFFFF" peso="semibold" />
             </View>
-          )}
-        </View>
+            <View style={styles.textos}>
+              <Text style={[typography.bodyMedium, styles.titulo]}>{habito.label}</Text>
+              <Text style={[typography.footnote, styles.motivo]}>{habito.reason}</Text>
+            </View>
+            {habito.percent !== null && (
+              <Text style={[typography.numero, styles.porcentaje]}>+{habito.percent}%</Text>
+            )}
+          </View>
+        </React.Fragment>
       ))}
-    </Card>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginBottom: spacing.md,
+  tarjeta: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    paddingHorizontal: spacing.lg,
   },
-  headerRow: {
+  separador: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.separator,
+    marginLeft: 28 + spacing.md,
+  },
+  fila: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
   },
-  title: {
-    color: colors.textPrimary,
-  },
-  badge: {
-    backgroundColor: colors.surfaceElevatedAlt,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-  },
-  badgeText: {
-    color: colors.textTertiary,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  rowLast: {
-    borderBottomWidth: 0,
-  },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surfaceElevatedAlt,
+  cuadroIcono: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.success,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.sm,
   },
-  icon: {
-    fontSize: 16,
-  },
-  rowText: {
+  textos: {
     flex: 1,
   },
-  rowTitle: {
+  titulo: {
     color: colors.textPrimary,
   },
-  rowReason: {
+  motivo: {
     color: colors.textTertiary,
     marginTop: 1,
   },
-  percentBadge: {
-    backgroundColor: colors.goldSoft,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    marginLeft: spacing.sm,
-  },
-  percentText: {
-    color: colors.gold,
+  porcentaje: {
+    color: colors.textPrimary,
   },
 });

@@ -146,6 +146,8 @@ const es: Record<string, string> = {
   'tab.account': 'Mi cuenta',
 
   'howYouAre.title': 'Cómo venís',
+  'howYouAre.subtitle': 'Tu devolución de hoy',
+  'howYouAre.weeklyNotice': 'Los domingos vas a recibir un resumen más completo de tu semana.',
   'calendar.title': 'Tu estado del mes',
   'home.greetingMorning': 'Buen día, {nombre}',
   'home.greetingAfternoon': 'Buenas tardes, {nombre}',
@@ -250,8 +252,10 @@ const es: Record<string, string> = {
   'dayDetail.weather': 'Clima',
   'dayDetail.loggedAt': 'Registrado a las {hora}',
 
-  'ai.summaryTitle': 'Cómo venís',
+  'ai.summaryTitle': 'Tu devolución',
   'ai.badge': 'Generado por IA (simulado)',
+  'ai.badgeShort': 'IA · simulada',
+  'ai.privacy': 'Se genera con datos agregados de tus días. Tu texto nunca sale del teléfono.',
   'ai.noData': 'Registrá algunos días más para que la IA pueda armarte un resumen.',
   'ai.genericTag': 'lo que registraste',
   'ai.template.improving':
@@ -262,13 +266,13 @@ const es: Record<string, string> = {
     'Tu ánimo se mantuvo estable esta semana, con un promedio de {avg}/5. Seguiste registrando {tag} seguido.',
   'ai.template.streak': 'Llevás {streak} días seguidos registrando — ¡seguí así!',
 
-  'ai.playlistsTitle': 'Playlists recomendadas',
+  'ai.playlistsTitle': 'Música para tu momento',
   'ai.playlistsBadge': 'Según tu ánimo reciente (simulado)',
 
-  'ai.habitsTitle': 'Hábitos recomendados',
+  'ai.habitsTitle': 'Hábitos para reforzar',
   'ai.habitsBadge': 'Según tu historial (simulado)',
   'ai.habits.genericReason': 'Sumalo unos días y vas a empezar a ver cómo te afecta.',
-  'ai.habits.correlationReason': 'Los días que lo marcaste, tu ánimo fue ~{percent}% más alto.',
+  'ai.habits.correlationReason': 'Esos días tu ánimo fue más alto que tu promedio.',
 
   'today.favoriteToggle': 'Destacar este día',
   'today.favoriteToggleOn': 'Día destacado',

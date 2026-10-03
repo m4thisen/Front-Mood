@@ -1,59 +1,91 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Card } from './Card';
+import { Icono } from './Icono';
 import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { useIndicadoresProgreso, useListaRegistros } from '@/stores/RegistroStore';
 import { generateAiSummary } from '@/api/simulado/devolucionesSimuladas';
 
 /**
- * Resumen de "cómo venís" hecho por IA. Hoy es 100% mock (ver
- * api/simulado/devolucionesSimuladas.ts) — el día que haya un backend con un modelo real,
- * solo hay que reemplazar generateAiSummary por la llamada a la API.
+ * Devolución "Cómo venís" (CU-21). Hoy es simulada (ver
+ * api/simulado/devolucionesSimuladas.ts); en la iteración 5 llega del
+ * servidor, que la pide a Claude con datos agregados, sin el texto libre.
  */
 export const AiSummaryCard: React.FC = () => {
   const { t } = useTranslation();
   const registros = useListaRegistros();
   const { rachaActual } = useIndicadoresProgreso();
 
-  const summary = useMemo(() => generateAiSummary(registros, rachaActual, t), [registros, rachaActual, t]);
+  const resumen = useMemo(() => generateAiSummary(registros, rachaActual, t), [registros, rachaActual, t]);
 
   return (
-    <Card style={styles.card} elevated>
-      <View style={styles.headerRow}>
-        <Text style={[typography.subtitle, styles.title]}>✨ {t('ai.summaryTitle')}</Text>
-        <View style={styles.badge}>
-          <Text style={[typography.micro, styles.badgeText]}>{t('ai.badge')}</Text>
+    <View style={styles.tarjeta}>
+      <View style={styles.cabecera}>
+        <View style={styles.cuadroIcono}>
+          <Icono nombre="ia" tamano={16} color={colors.accentStrong} peso="semibold" />
+        </View>
+        <Text style={[typography.headline, styles.titulo]}>{t('ai.summaryTitle')}</Text>
+        <View style={styles.pastilla}>
+          <Text style={[typography.micro, styles.textoPastilla]}>{t('ai.badgeShort')}</Text>
         </View>
       </View>
-      <Text style={[typography.body, styles.body]}>{summary ?? t('ai.noData')}</Text>
-    </Card>
+      <Text style={[typography.body, styles.cuerpo]}>{resumen ?? t('ai.noData')}</Text>
+      <View style={styles.privacidad}>
+        <Icono nombre="candado" tamano={11} color={colors.textTertiary} />
+        <Text style={[typography.micro, styles.textoPrivacidad]}>{t('ai.privacy')}</Text>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginBottom: spacing.md,
+  tarjeta: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    padding: spacing.lg,
   },
-  headerRow: {
+  cabecera: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
-  title: {
+  cuadroIcono: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titulo: {
+    flex: 1,
     color: colors.textPrimary,
   },
-  badge: {
-    backgroundColor: colors.accentSoft,
+  pastilla: {
+    backgroundColor: colors.fill,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
-  badgeText: {
-    color: colors.accentStrong,
+  textoPastilla: {
+    color: colors.textTertiary,
   },
-  body: {
-    color: colors.textSecondary,
+  cuerpo: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  privacidad: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: spacing.md,
+  },
+  textoPrivacidad: {
+    flex: 1,
+    color: colors.textTertiary,
   },
 });

@@ -20,7 +20,6 @@ const es: Record<string, string> = {
   'welcome.description': 'Un lugar tranquilo para registrar cómo estuvo tu día, noche a noche.',
   'welcome.login': 'Iniciar sesión',
   'welcome.register': 'Crear cuenta',
-  'welcome.continueAsGuest': 'Continuar sin cuenta',
   'welcome.languageLabel': 'Idioma',
 
   'register.title': 'Contanos de vos',
@@ -191,9 +190,6 @@ const es: Record<string, string> = {
   'weather.calor': 'Calor',
 
   'account.title': 'Mi cuenta',
-  'account.guestBadge': 'Invitado',
-  'account.loginWithGoogle': 'Continuar con Google',
-  'account.guestNotice': 'Creá una cuenta para activar recordatorios, exportar tus datos y no perder tu historial.',
   'account.streak': 'Racha actual',
   'account.totalEntries': 'Días registrados',
   'account.settings': 'Preferencias',

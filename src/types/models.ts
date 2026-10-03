@@ -40,7 +40,6 @@ export interface UserProfile {
   customTags: CustomTag[];
   notificationHour: number; // 0-23
   notificationMinute: number; // 0-59
-  isLoggedIn: boolean; // true si "creó cuenta", false si es invitado
   onboardingComplete: boolean;
 }
 

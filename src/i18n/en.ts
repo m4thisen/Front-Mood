@@ -20,7 +20,6 @@ const en: Record<string, string> = {
   'welcome.description': 'A calm place to log how your day went, night after night.',
   'welcome.login': 'Log in',
   'welcome.register': 'Create account',
-  'welcome.continueAsGuest': 'Continue without an account',
   'welcome.languageLabel': 'Language',
 
   'register.title': 'Tell us about you',
@@ -191,9 +190,6 @@ const en: Record<string, string> = {
   'weather.calor': 'Hot',
 
   'account.title': 'Account',
-  'account.guestBadge': 'Guest',
-  'account.loginWithGoogle': 'Continue with Google',
-  'account.guestNotice': "Create an account to enable reminders, export your data and keep your history safe.",
   'account.streak': 'Current streak',
   'account.totalEntries': 'Days logged',
   'account.settings': 'Preferences',
@@ -249,7 +245,7 @@ const en: Record<string, string> = {
   'soulReveal.description': "It'll shift with every day you log. It doesn't have its own color yet — it's yours starting today.",
   'soulReveal.cta': 'Get started',
 
-  'welcome.googleError': 'No pudimos conectar con Google, probá de nuevo'
+  'welcome.googleError': "We couldn't connect to Google, please try again"
 };
 
 export default en;

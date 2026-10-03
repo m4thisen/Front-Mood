@@ -95,11 +95,6 @@ export const AccountScreen: React.FC = () => {
           </View>
           <View style={styles.profileInfo}>
             <Text style={[typography.title, styles.name]}>{profile?.name}</Text>
-            {!profile?.isLoggedIn && (
-              <View style={styles.guestBadge}>
-                <Text style={[typography.micro, styles.guestBadgeText]}>{t('account.guestBadge')}</Text>
-              </View>
-            )}
           </View>
         </View>
         <View style={styles.statsRow}>
@@ -113,17 +108,6 @@ export const AccountScreen: React.FC = () => {
           </View>
         </View>
       </Card>
-
-      {!profile?.isLoggedIn && (
-        <Card style={styles.card}>
-          <Text style={[typography.body, styles.guestNotice]}>{t('account.guestNotice')}</Text>
-          <GlowButton
-            label={t('account.loginWithGoogle')}
-            onPress={() => updateProfile({ isLoggedIn: true })}
-            style={{ marginTop: spacing.md }}
-          />
-        </Card>
-      )}
 
       <Card style={styles.card}>
         <Text style={[typography.subtitle, styles.cardTitle]}>{t('account.language')}</Text>
@@ -265,17 +249,6 @@ const styles = StyleSheet.create({
   name: {
     color: colors.textPrimary,
   },
-  guestBadge: {
-    backgroundColor: colors.surfaceElevatedAlt,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  guestBadgeText: {
-    color: colors.textTertiary,
-  },
   statsRow: {
     flexDirection: 'row',
     marginTop: spacing.lg,
@@ -304,9 +277,6 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     marginTop: spacing.xs,
     marginBottom: spacing.sm,
-  },
-  guestNotice: {
-    color: colors.textSecondary,
   },
   chipsRow: {
     flexDirection: 'row',

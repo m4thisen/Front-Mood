@@ -15,14 +15,13 @@
       "backgroundColor": "#050B1E",
       "package": "com.matiascasullo.mood"
     },
-    "extra": {
-      "supabaseUrl": "PEGÁ_ACÁ_LA_URL_DE_TU_PROYECTO_SUPABASE",
-      "supabaseAnonKey": "PEGÁ_ACÁ_TU_ANON_KEY",
-      "googleWebClientId": "PEGÁ_ACÁ_EL_WEB_CLIENT_ID_DE_GOOGLE_CLOUD"
-    },
     "plugins": [
-      ["expo-notifications", { "color": "#6C8CFF" }],
-      "@react-native-google-signin/google-signin"
+      [
+        "expo-notifications",
+        {
+          "color": "#6C8CFF"
+        }
+      ]
     ]
   }
 }

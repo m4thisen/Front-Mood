@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -10,7 +10,6 @@ import { useTranslation } from '@/i18n';
 import { useApp } from '@/context/AppContext';
 import { RootStackParamList } from '@/navigation/types';
 import { moodScale } from '@/theme/colors';
-import { signInWithGoogle } from '@/utils/googleAuth';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Welcome'>;
 
@@ -18,26 +17,11 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
   const { t, language, setLanguage } = useTranslation();
   const { beginOnboarding } = useApp();
 
-    const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-
-  const handleGoogleAuth = async () => {
-    setAuthError(null);
-    setAuthLoading(true);
-    try {
-      const session = await signInWithGoogle();
-      if (!session) return; // el usuario canceló, no hacemos nada
-      beginOnboarding(true);
-      navigation.navigate('Register');
-    } catch (e) {
-      setAuthError(t('welcome.googleError'));
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const continueAsGuest = () => {
-    beginOnboarding(false);
+  // Crear cuenta e iniciar sesión usan un único endpoint (POST /auth/google):
+  // el servidor decide si crea o si entra. El flujo con Google se conecta en
+  // la iteración 1; mientras tanto ambos botones abren el onboarding.
+  const ingresar = () => {
+    beginOnboarding();
     navigation.navigate('Register');
   };
 
@@ -84,19 +68,13 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <Animated.View entering={FadeInDown.delay(350).duration(600)} style={styles.actions}>
-        <GlowButton label={t('welcome.register')} onPress={() => start(true)} />
+        <GlowButton label={t('welcome.register')} onPress={ingresar} />
         <GlowButton
-  label={authLoading ? '…' : t('welcome.register')}
-  onPress={handleGoogleAuth}
-  disabled={authLoading}
-/>
-<GlowButton
-  label={t('welcome.continueAsGuest')}
-  onPress={continueAsGuest}
-  variant="ghost"
-  style={styles.spaced}
-/>
-{authError && <Text style={{ color: colors.danger, textAlign: 'center', marginTop: 8 }}>{authError}</Text>}
+          label={t('welcome.login')}
+          onPress={ingresar}
+          variant="ghost"
+          style={styles.spaced}
+        />
       </Animated.View>
     </ScreenContainer>
   );

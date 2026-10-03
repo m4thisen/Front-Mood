@@ -21,7 +21,6 @@ const DRAFT_PROFILE: UserProfile = {
   customTags: [],
   notificationHour: 21,
   notificationMinute: 0,
-  isLoggedIn: false,
   onboardingComplete: false,
 };
 
@@ -33,7 +32,7 @@ interface AppContextValue {
   soulColor: string | null;
   todayEntry: DayEntry | null;
 
-  beginOnboarding: (isLoggedIn: boolean) => void;
+  beginOnboarding: () => void;
   updateProfile: (partial: Partial<UserProfile>) => void;
   completeOnboarding: () => void;
   addCustomTag: (tag: CustomTag) => void;
@@ -66,12 +65,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     Storage.saveProfile(next);
   }, []);
 
-  const beginOnboarding = useCallback(
-    (isLoggedIn: boolean) => {
-      persistProfile({ ...DRAFT_PROFILE, isLoggedIn });
-    },
-    [persistProfile]
-  );
+  const beginOnboarding = useCallback(() => {
+    persistProfile({ ...DRAFT_PROFILE });
+  }, [persistProfile]);
 
   const updateProfile = useCallback(
     (partial: Partial<UserProfile>) => {

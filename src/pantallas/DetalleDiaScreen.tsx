@@ -1,15 +1,18 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { format, parseISO } from 'date-fns';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
-import { Card } from '@/componentes/Card';
-import { GlowButton } from '@/componentes/GlowButton';
+import { BotonIcono, EncabezadoSeccion } from '@/componentes/Encabezados';
+import { CaraAnimo } from '@/componentes/CaraAnimo';
+import { Icono } from '@/componentes/Icono';
+import { Boton } from '@/componentes/Boton';
+import { FilaLista, GrupoLista } from '@/componentes/Lista';
+import { iconoDeEtiqueta, ICONOS_CLIMA } from '@/componentes/iconosDominio';
 import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { useRegistroStore } from '@/stores/RegistroStore';
 import { useSesionStore } from '@/stores/SesionStore';
-import { getMoodColor } from '@/tema/colors';
 import { claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
 import { RootStackParamList } from '@/navegacion/tipos';
 import { dateLocale, todayISO } from '@/utils/fecha';
@@ -29,7 +32,7 @@ export const DetalleDiaScreen: React.FC<Props> = ({ route, navigation }) => {
   const tags = useSesionStore((s) => s.tags);
   const editable = esEditable({ fecha }, todayISO());
 
-  const dateLabel = format(parseISO(fecha), "EEEE d 'de' MMMM", { locale: dateLocale(language) });
+  const titulo = format(parseISO(fecha), "EEEE d 'de' MMMM", { locale: dateLocale(language) });
 
   const irAHoy = () => {
     navigation.goBack();
@@ -46,86 +49,124 @@ export const DetalleDiaScreen: React.FC<Props> = ({ route, navigation }) => {
         .filter((v): v is string => v !== null)
     : [];
 
+  const filasContexto = registro
+    ? [
+        registro.climas.length > 0 && (
+          <FilaLista
+            key="clima"
+            icono={ICONOS_CLIMA[registro.climas[0]]}
+            colorIcono="#F5A524"
+            titulo={t('dayDetail.weather')}
+            valor={registro.climas.map((c) => t(`weather.${c}`)).join(', ')}
+          />
+        ),
+        registro.horasSueno !== null && (
+          <FilaLista
+            key="sueno"
+            icono="sueno"
+            colorIcono="#7C6CF2"
+            titulo={t('today.sleepShort')}
+            valor={`${String(registro.horasSueno).replace('.', ',')} h`}
+          />
+        ),
+        registro.minutosEjercicio !== null && (
+          <FilaLista
+            key="ejercicio"
+            icono="ejercicio"
+            colorIcono="#34C77B"
+            titulo={t('today.exerciseShort')}
+            valor={`${registro.minutosEjercicio} min`}
+          />
+        ),
+        registro.cancion && (
+          <FilaLista
+            key="cancion"
+            icono="cancion"
+            colorIcono="#F2547D"
+            titulo={t('today.songLabel')}
+            valor={[registro.cancion.titulo, registro.cancion.artista].filter(Boolean).join(' — ')}
+          />
+        ),
+      ].filter(Boolean)
+    : [];
+
   return (
     <ScreenContainer scroll contentStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={[typography.caption, styles.eyebrow]}>{fecha}</Text>
-          <Text style={[typography.displayM, styles.dateLabel]}>{dateLabel}</Text>
-        </View>
-        <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
-          <Text style={styles.closeIcon}>✕</Text>
-        </Pressable>
+      <View style={styles.cabecera}>
+        <Text style={[typography.displayM, styles.titulo]}>{titulo.charAt(0).toUpperCase() + titulo.slice(1)}</Text>
+        <BotonIcono icono="cerrar" etiqueta={t('common.close')} onPress={() => navigation.goBack()} />
       </View>
 
       {!registro ? (
-        <Card>
-          <Text style={[typography.body, styles.emptyText]}>{t('dayDetail.noEntry')}</Text>
-          {editable && (
-            <GlowButton label={t('dayDetail.logToday')} onPress={irAHoy} style={styles.action} />
-          )}
-        </Card>
+        <View style={styles.vacio}>
+          <Icono nombre="calendario" tamano={32} color={colors.textTertiary} />
+          <Text style={[typography.bodyMedium, styles.textoVacio]}>{t('dayDetail.noEntry')}</Text>
+          {editable && <Boton titulo={t('dayDetail.logToday')} icono="agregar" onPress={irAHoy} style={styles.accion} />}
+        </View>
       ) : (
         <>
-          <Card style={styles.moodCard} elevated>
-            <View style={[styles.moodDot, { backgroundColor: getMoodColor(registro.nivelAnimo) }]} />
-            <View style={styles.moodInfo}>
-              <Text style={[typography.caption, styles.moodEyebrow]}>{t('dayDetail.mood')}</Text>
-              <Text style={[typography.title, styles.moodLabel]}>{t(`mood.${registro.nivelAnimo}`)}</Text>
+          <View style={styles.hero}>
+            <CaraAnimo nivel={registro.nivelAnimo} tamano={64} />
+            <View style={styles.heroTextos}>
+              <Text style={[typography.title, styles.animo]}>{t(`mood.${registro.nivelAnimo}`)}</Text>
+              <View style={styles.metaFila}>
+                <Icono nombre="hora" tamano={12} color={colors.textTertiary} />
+                <Text style={[typography.footnote, styles.meta]}>
+                  {t('dayDetail.loggedAt').replace('{hora}', format(new Date(registro.horaCarga), 'HH:mm'))}
+                </Text>
+              </View>
+              {registro.destacado && (
+                <View style={styles.destacado}>
+                  <Icono nombre="destacado" relleno tamano={12} color={colors.gold} />
+                  <Text style={[typography.micro, styles.textoDestacado]}>{t('dayDetail.favorite')}</Text>
+                </View>
+              )}
             </View>
-            {registro.destacado && <Text style={styles.favoriteStar}>⭐</Text>}
-          </Card>
-
-          {registro.texto ? (
-            <Card style={styles.card}>
-              <Text style={[typography.caption, styles.cardTitle]}>{t('dayDetail.note')}</Text>
-              <Text style={[typography.body, styles.noteText]}>{registro.texto}</Text>
-            </Card>
-          ) : null}
+          </View>
 
           {registro.etiquetas.length + valoresTags.length > 0 && (
-            <Card style={styles.card}>
-              <Text style={[typography.caption, styles.cardTitle]}>{t('dayDetail.tags')}</Text>
-              <View style={styles.tagsWrap}>
+            <>
+              <EncabezadoSeccion titulo={t('today.tagsTitle')} />
+              <View style={styles.pastillas}>
                 {registro.etiquetas.map((clave) => (
-                  <View key={clave} style={styles.tagPill}>
-                    <Text style={[typography.caption, styles.tagPillText]}>{t(claveTraduccionEtiqueta(clave))}</Text>
+                  <View key={clave} style={styles.pastilla}>
+                    <Icono nombre={iconoDeEtiqueta(clave)} tamano={13} color={colors.textTertiary} />
+                    <Text style={[typography.footnote, styles.textoPastilla]}>{t(claveTraduccionEtiqueta(clave))}</Text>
                   </View>
                 ))}
                 {valoresTags.map((texto) => (
-                  <View key={texto} style={styles.tagPill}>
-                    <Text style={[typography.caption, styles.tagPillText]}>{texto}</Text>
+                  <View key={texto} style={styles.pastilla}>
+                    <Icono nombre="tag" tamano={13} color={colors.textTertiary} />
+                    <Text style={[typography.footnote, styles.textoPastilla]}>{texto}</Text>
                   </View>
                 ))}
               </View>
-            </Card>
+            </>
           )}
 
-          {(registro.cancion ||
-            registro.climas.length > 0 ||
-            registro.minutosEjercicio !== null ||
-            registro.horasSueno !== null) && (
-            <Card style={styles.card}>
-              {registro.cancion ? (
-                <DetailLine
-                  icon="🎧"
-                  label={[registro.cancion.titulo, registro.cancion.artista].filter(Boolean).join(' — ')}
-                />
-              ) : null}
-              {registro.climas.length > 0 ? (
-                <DetailLine icon="☁️" label={registro.climas.map((c) => t(`weather.${c}`)).join(', ')} />
-              ) : null}
-              {registro.minutosEjercicio !== null ? (
-                <DetailLine icon="⚡️" label={`${registro.minutosEjercicio} min`} />
-              ) : null}
-              {registro.horasSueno !== null ? <DetailLine icon="💤" label={`${registro.horasSueno} h`} /> : null}
-            </Card>
+          {filasContexto.length > 0 && (
+            <>
+              <EncabezadoSeccion titulo={t('today.contextTitle')} />
+              <GrupoLista>{filasContexto}</GrupoLista>
+            </>
           )}
+
+          {registro.texto ? (
+            <>
+              <EncabezadoSeccion titulo={t('dayDetail.note')} />
+              <View style={styles.nota}>
+                <Text style={[typography.body, styles.textoNota]}>{registro.texto}</Text>
+              </View>
+            </>
+          ) : null}
 
           {editable ? (
-            <GlowButton label={t('dayDetail.editToday')} onPress={irAHoy} variant="secondary" />
+            <Boton titulo={t('dayDetail.editToday')} icono="editar" variante="secundario" onPress={irAHoy} style={styles.accion} />
           ) : (
-            <Text style={[typography.caption, styles.readOnly]}>{t('dayDetail.readOnly')}</Text>
+            <View style={styles.soloLectura}>
+              <Icono nombre="candado" tamano={12} color={colors.textTertiary} />
+              <Text style={[typography.footnote, styles.meta]}>{t('dayDetail.readOnly')}</Text>
+            </View>
           )}
         </>
       )}
@@ -133,115 +174,105 @@ export const DetalleDiaScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const DetailLine: React.FC<{ icon: string; label: string }> = ({ icon, label }) => (
-  <View style={styles.detailLine}>
-    <Text style={styles.detailIcon}>{icon}</Text>
-    <Text style={[typography.body, styles.detailLabel]}>{label}</Text>
-  </View>
-);
-
 const styles = StyleSheet.create({
   content: {
-    paddingTop: spacing.lg,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.xxxl,
   },
-  headerRow: {
+  cabecera: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
     marginBottom: spacing.xl,
   },
-  eyebrow: {
-    color: colors.textTertiary,
-  },
-  dateLabel: {
+  titulo: {
+    flex: 1,
     color: colors.textPrimary,
-    textTransform: 'capitalize',
+  },
+  hero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    padding: spacing.lg,
+  },
+  heroTextos: {
+    flex: 1,
+  },
+  animo: {
+    color: colors.textPrimary,
+  },
+  metaFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     marginTop: 2,
   },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
+  meta: {
+    color: colors.textTertiary,
   },
-  closeIcon: {
-    color: colors.textSecondary,
-    fontSize: 15,
-  },
-  emptyText: {
-    color: colors.textSecondary,
-  },
-  moodCard: {
+  destacado: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.goldSoft,
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
   },
-  favoriteStar: {
-    fontSize: 20,
-    marginLeft: 'auto',
+  textoDestacado: {
+    color: colors.gold,
   },
-  moodDot: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  moodInfo: {
-    marginLeft: spacing.md,
-  },
-  moodEyebrow: {
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-  },
-  moodLabel: {
-    color: colors.textPrimary,
-  },
-  card: {
-    marginBottom: spacing.md,
-  },
-  cardTitle: {
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-    marginBottom: spacing.sm,
-  },
-  noteText: {
-    color: colors.textPrimary,
-  },
-  tagsWrap: {
+  pastillas: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: spacing.sm,
   },
-  tagPill: {
-    backgroundColor: colors.surfaceElevatedAlt,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginRight: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  tagPillText: {
-    color: colors.textPrimary,
-  },
-  detailLine: {
+  pastilla: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    gap: 5,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.fill,
   },
-  detailIcon: {
-    fontSize: 16,
-    marginRight: spacing.sm,
-  },
-  detailLabel: {
+  textoPastilla: {
     color: colors.textPrimary,
   },
-  action: {
-    marginTop: spacing.md,
+  nota: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    padding: spacing.lg,
   },
-  readOnly: {
-    color: colors.textTertiary,
+  textoNota: {
+    color: colors.textPrimary,
+  },
+  accion: {
+    marginTop: spacing.xl,
+  },
+  soloLectura: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: spacing.xl,
+  },
+  vacio: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxxl,
+    gap: spacing.sm,
+  },
+  textoVacio: {
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginTop: spacing.sm,
   },
 });

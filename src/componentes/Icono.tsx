@@ -32,6 +32,8 @@ const ICONOS = {
   desplegar: { ios: 'chevron.down', android: 'expand_more' },
   editar: { ios: 'pencil', android: 'edit' },
   menos: { ios: 'minus', android: 'remove' },
+  candado: { ios: 'lock', iosRelleno: 'lock.fill', android: 'lock' },
+  hora: { ios: 'clock', android: 'schedule' },
 
   // Registro del día
   destacado: { ios: 'star', iosRelleno: 'star.fill', android: 'star' },

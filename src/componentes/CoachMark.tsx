@@ -7,14 +7,16 @@ interface Props {
   step: string; // ej. "1/2"
   visible: boolean;
   onDismiss: () => void;
+  /** Distancia al borde inferior: justo encima de la barra. */
+  bottom: number;
 }
 
 /** Globo de ayuda que apunta hacia abajo (al botón "Hoy" del navbar). */
-export const CoachMark: React.FC<Props> = ({ message, step, visible, onDismiss }) => {
+export const CoachMark: React.FC<Props> = ({ message, step, visible, onDismiss, bottom }) => {
   if (!visible) return null;
 
   return (
-    <Pressable onPress={onDismiss} style={styles.wrapper}>
+    <Pressable onPress={onDismiss} style={[styles.wrapper, { bottom }]} accessibilityRole="button">
       <View style={styles.bubble}>
         <Text style={[typography.bodyMedium, styles.message]}>{message}</Text>
         <Text style={[typography.caption, styles.step]}>{step}</Text>
@@ -27,8 +29,7 @@ export const CoachMark: React.FC<Props> = ({ message, step, visible, onDismiss }
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    bottom: 92,
-    right: 24,
+    right: 16,
     alignItems: 'flex-end',
   },
   bubble: {
@@ -49,7 +50,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     backgroundColor: colors.accent,
-    marginRight: 22,
+    marginRight: 25,
     marginTop: -6,
     transform: [{ rotate: '45deg' }],
   },

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, parseISO } from 'date-fns';
-import { ScreenContainer } from '@/componentes/ScreenContainer';
-import { GlowButton } from '@/componentes/GlowButton';
-import { BlockChip } from '@/componentes/BlockChip';
-import { StepDots } from '@/componentes/StepDots';
+import { PasoOnboarding } from '@/componentes/PasoOnboarding';
+import { Boton } from '@/componentes/Boton';
+import { Chip } from '@/componentes/Chip';
+import { Icono } from '@/componentes/Icono';
+import { HojaInferior } from '@/componentes/HojaInferior';
 import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { useSesionStore } from '@/stores/SesionStore';
@@ -16,176 +17,140 @@ import { dateLocale, toISODate } from '@/utils/fecha';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DatosBasicos'>;
 
+/** Paso 1 del onboarding (CU-04): nombre, fecha de nacimiento y género. */
 export const DatosBasicosScreen: React.FC<Props> = ({ navigation }) => {
   const { t, language } = useTranslation();
   const usuario = useSesionStore((s) => s.usuario);
   const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
+  const cerrarSesion = useSesionStore((s) => s.cerrarSesion);
 
-  const [name, setName] = useState(usuario?.nombre ?? '');
-  const [birthDate, setBirthDate] = useState<Date | null>(
+  const [nombre, setNombre] = useState(usuario?.nombre ?? '');
+  const [nacimiento, setNacimiento] = useState<Date | null>(
     usuario?.fechaNacimiento ? parseISO(usuario.fechaNacimiento) : null
   );
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [gender, setGender] = useState<Genero>(usuario?.genero ?? 'PREFIERO_NO_DECIR');
+  const [borradorNacimiento, setBorradorNacimiento] = useState<Date>(nacimiento ?? new Date(2000, 0, 1, 12));
+  const [eligiendoFecha, setEligiendoFecha] = useState(false);
+  const [genero, setGenero] = useState<Genero>(usuario?.genero ?? 'PREFIERO_NO_DECIR');
 
-  const canContinue = name.trim().length > 0 && birthDate !== null;
+  // CU-04, E1: no se puede avanzar sin nombre ni fecha de nacimiento.
+  const completo = nombre.trim().length > 0 && nacimiento !== null;
 
-  const handleContinue = async () => {
+  const continuar = async () => {
     await actualizarPreferencias({
-      nombre: name.trim(),
-      fechaNacimiento: birthDate ? toISODate(birthDate) : '',
-      genero: gender,
+      nombre: nombre.trim(),
+      fechaNacimiento: nacimiento ? toISODate(nacimiento) : '',
+      genero,
     });
     navigation.navigate('Bloques');
   };
 
-  const handleDateChange = (event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'android') setShowDatePicker(false);
-    if (event.type === 'dismissed') return;
-    if (selected) setBirthDate(selected);
-  };
-
   return (
-    <ScreenContainer scroll contentStyle={styles.content}>
-      <StepDots total={4} current={0} />
-      <Text style={[typography.displayM, styles.title]}>{t('register.title')}</Text>
-      <Text style={[typography.body, styles.subtitle]}>{t('register.subtitle')}</Text>
-
-      <View style={styles.field}>
-        <Text style={[typography.caption, styles.label]}>{t('register.name')}</Text>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder={t('register.namePlaceholder')}
-          placeholderTextColor={colors.textTertiary}
-          style={styles.input}
-        />
-      </View>
-
-      <View style={styles.field}>
-        <Text style={[typography.caption, styles.label]}>{t('register.birthDate')}</Text>
-        <Pressable onPress={() => setShowDatePicker(true)} style={styles.pickerTrigger}>
-          <Text style={[typography.bodyMedium, birthDate ? styles.pickerValue : styles.pickerPlaceholder]}>
-            {birthDate
-              ? format(birthDate, 'd MMMM yyyy', { locale: dateLocale(language) })
-              : t('register.birthDatePlaceholder')}
-          </Text>
-        </Pressable>
-        {birthDate && (
-          <Text style={[typography.caption, styles.age]}>
-            {t('register.age').replace('{edad}', String(calcularEdad(toISODate(birthDate))))}
-          </Text>
-        )}
-
-        {showDatePicker && (
-          <View style={Platform.OS === 'ios' ? styles.iosPickerWrap : undefined}>
-            <DateTimePicker
-              value={birthDate ?? new Date(2000, 0, 1)}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              maximumDate={new Date()}
-              onChange={handleDateChange}
-              themeVariant="dark"
-              locale={language === 'es' ? 'es-ES' : 'en-US'}
-            />
-            {Platform.OS === 'ios' && (
-              <GlowButton
-                label={t('common.done')}
-                onPress={() => setShowDatePicker(false)}
-                variant="secondary"
-                style={{ marginTop: spacing.sm }}
-              />
-            )}
-          </View>
-        )}
-      </View>
-
-      <View style={styles.field}>
-        <Text style={[typography.caption, styles.label]}>{t('register.gender')}</Text>
-        <View style={styles.chipsRow}>
-          {GENEROS.map((g) => (
-            <BlockChip
-              key={g}
-              label={t(`register.gender.${g}`)}
-              selected={gender === g}
-              onPress={() => setGender(g)}
-            />
-          ))}
-        </View>
-      </View>
-
-      <GlowButton
-        label={t('common.continue')}
-        onPress={handleContinue}
-        disabled={!canContinue}
-        style={styles.continueButton}
+    <PasoOnboarding
+      paso={0}
+      titulo={t('register.title')}
+      subtitulo={t('register.subtitle')}
+      onAtras={cerrarSesion}
+      pie={<Boton titulo={t('common.continue')} onPress={continuar} deshabilitado={!completo} />}
+    >
+      <Text style={[typography.seccion, styles.etiqueta]}>{t('register.name')}</Text>
+      <TextInput
+        value={nombre}
+        onChangeText={setNombre}
+        placeholder={t('register.namePlaceholder')}
+        placeholderTextColor={colors.textTertiary}
+        style={[typography.bodyMedium, styles.campo]}
+        autoCapitalize="words"
+        returnKeyType="done"
       />
-    </ScreenContainer>
+
+      <Text style={[typography.seccion, styles.etiqueta]}>{t('register.birthDate')}</Text>
+      <Pressable
+        onPress={() => {
+          Keyboard.dismiss();
+          setEligiendoFecha(true);
+        }}
+        style={({ pressed }) => [styles.campo, styles.campoFecha, pressed && styles.presionado]}
+        accessibilityRole="button"
+      >
+        <Text style={[typography.bodyMedium, { color: nacimiento ? colors.textPrimary : colors.textTertiary }]}>
+          {nacimiento
+            ? format(nacimiento, "d 'de' MMMM 'de' yyyy", { locale: dateLocale(language) })
+            : t('register.birthDatePlaceholder')}
+        </Text>
+        <Icono nombre="calendario" tamano={16} color={colors.textTertiary} />
+      </Pressable>
+      {nacimiento && (
+        <Text style={[typography.footnote, styles.edad]}>
+          {t('register.age').replace('{edad}', String(calcularEdad(toISODate(nacimiento))))}
+        </Text>
+      )}
+
+      <Text style={[typography.seccion, styles.etiqueta]}>{t('register.gender')}</Text>
+      <View style={styles.chips}>
+        {GENEROS.map((g) => (
+          <Chip key={g} etiqueta={t(`register.gender.${g}`)} seleccionado={genero === g} onPress={() => setGenero(g)} />
+        ))}
+      </View>
+
+      <HojaInferior
+        visible={eligiendoFecha}
+        titulo={t('register.birthDate')}
+        onCerrar={() => setEligiendoFecha(false)}
+        pie={
+          <Boton
+            titulo={t('common.done')}
+            onPress={() => {
+              setNacimiento(borradorNacimiento);
+              setEligiendoFecha(false);
+            }}
+          />
+        }
+      >
+        <DateTimePicker
+          value={borradorNacimiento}
+          mode="date"
+          display="spinner"
+          style={{ height: 216 }}
+          maximumDate={new Date()}
+          onChange={(_e, fecha) => fecha && setBorradorNacimiento(fecha)}
+          themeVariant="dark"
+          locale={language === 'es' ? 'es-AR' : 'en-US'}
+        />
+      </HojaInferior>
+    </PasoOnboarding>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xxxl,
-  },
-  title: {
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    marginBottom: spacing.xl,
-  },
-  field: {
-    marginBottom: spacing.lg,
-  },
-  label: {
+  etiqueta: {
     color: colors.textTertiary,
-    marginBottom: spacing.xs,
-    textTransform: 'uppercase',
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    color: colors.textPrimary,
-    fontFamily: 'Manrope_500Medium',
-    fontSize: 15,
-  },
-  pickerTrigger: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  pickerValue: {
-    color: colors.textPrimary,
-    textTransform: 'capitalize',
-  },
-  pickerPlaceholder: {
-    color: colors.textTertiary,
-  },
-  age: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  iosPickerWrap: {
-    backgroundColor: colors.surface,
+  campo: {
+    minHeight: 52,
+    paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
-    marginTop: spacing.sm,
-    padding: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    color: colors.textPrimary,
   },
-  chipsRow: {
+  campoFecha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  presionado: {
+    opacity: 0.7,
+  },
+  edad: {
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+  },
+  chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-  },
-  continueButton: {
-    marginTop: spacing.lg,
+    gap: spacing.sm,
   },
 });

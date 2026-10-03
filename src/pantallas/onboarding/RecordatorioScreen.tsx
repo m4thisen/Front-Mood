@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { ScreenContainer } from '@/componentes/ScreenContainer';
-import { GlowButton } from '@/componentes/GlowButton';
-import { StepDots } from '@/componentes/StepDots';
-import { colors, spacing, typography } from '@/tema';
+import { PasoOnboarding } from '@/componentes/PasoOnboarding';
+import { Boton } from '@/componentes/Boton';
+import { Icono } from '@/componentes/Icono';
+import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { useSesionStore } from '@/stores/SesionStore';
-import { formatearHora, HORA_RECORDATORIO_POR_DEFECTO, partesHora } from '@/dominio';
 import { RootStackParamList } from '@/navegacion/tipos';
 import { programarRecordatorio } from '@/servicios/NotificacionService';
+import { formatearHora, HORA_RECORDATORIO_POR_DEFECTO, partesHora } from '@/dominio';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Recordatorio'>;
 
@@ -21,70 +21,71 @@ const aFecha = (horaTexto: string): Date => {
   return d;
 };
 
+/** Paso 4 del onboarding (CU-04, pasos 7 a 10): hora del recordatorio diario. */
 export const RecordatorioScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
   const horaGuardada = useSesionStore((s) => s.usuario?.horaRecordatorio);
   const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
 
-  const [time, setTime] = useState(aFecha(horaGuardada ?? HORA_RECORDATORIO_POR_DEFECTO));
+  const [hora, setHora] = useState(aFecha(horaGuardada ?? HORA_RECORDATORIO_POR_DEFECTO));
+  const [guardando, setGuardando] = useState(false);
 
-  const handleChange = (_event: DateTimePickerEvent, selected?: Date) => {
-    if (selected) setTime(selected);
-  };
-
-  const handleFinish = async () => {
-    const hora = formatearHora(time.getHours(), time.getMinutes());
-    await actualizarPreferencias({ horaRecordatorio: hora });
-    const programado = await programarRecordatorio(hora, t('appName'), t('welcome.description'));
+  const terminar = async () => {
+    setGuardando(true);
+    const texto = formatearHora(hora.getHours(), hora.getMinutes());
+    await actualizarPreferencias({ horaRecordatorio: texto });
+    const programado = await programarRecordatorio(texto, t('appName'), t('welcome.description'));
+    setGuardando(false);
     // CU-04 E2: sin permiso la configuración se completa igual, avisando.
     if (!programado) Alert.alert(t('steps.notificationDeniedTitle'), t('steps.notificationDeniedBody'));
     navigation.navigate('ColorDelAlma');
   };
 
   return (
-    <ScreenContainer contentStyle={styles.content}>
-      <View>
-        <StepDots total={4} current={3} />
-        <Text style={[typography.displayM, styles.title]}>{t('steps.notificationTitle')}</Text>
-        <Text style={[typography.body, styles.subtitle]}>{t('steps.notificationSubtitle')}</Text>
-
-        <View style={styles.pickerCard}>
-          <DateTimePicker
-            value={time}
-            mode="time"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleChange}
-            themeVariant="dark"
-            is24Hour
-          />
-        </View>
+    <PasoOnboarding
+      paso={3}
+      titulo={t('steps.notificationTitle')}
+      subtitulo={t('steps.notificationSubtitle')}
+      onAtras={() => navigation.goBack()}
+      pie={<Boton titulo={t('steps.notificationCta')} icono="recordatorio" onPress={terminar} cargando={guardando} />}
+    >
+      <View style={styles.tarjeta}>
+        <DateTimePicker
+          value={hora}
+          mode="time"
+          display="spinner"
+          style={{ height: 216 }}
+          onChange={(_e: DateTimePickerEvent, fecha?: Date) => fecha && setHora(fecha)}
+          themeVariant="dark"
+          is24Hour
+        />
       </View>
-
-      <GlowButton label={t('common.finish')} onPress={handleFinish} />
-    </ScreenContainer>
+      <View style={styles.nota}>
+        <Icono nombre="recordatorio" tamano={14} color={colors.textTertiary} />
+        <Text style={[typography.footnote, styles.textoNota]}>{t('steps.notificationHint')}</Text>
+      </View>
+    </PasoOnboarding>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    justifyContent: 'space-between',
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xl,
-  },
-  title: {
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    marginBottom: spacing.xl,
-  },
-  pickerCard: {
+  tarjeta: {
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
     alignItems: 'center',
     paddingVertical: spacing.sm,
+  },
+  nota: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.xs,
+  },
+  textoNota: {
+    flex: 1,
+    color: colors.textTertiary,
   },
 });

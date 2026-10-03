@@ -231,6 +231,7 @@ export const CuentaScreen: React.FC = () => {
           value={horaBorrador}
           mode="time"
           display="spinner"
+          style={{ height: 216 }}
           onChange={(_e: DateTimePickerEvent, fecha?: Date) => fecha && setHoraBorrador(fecha)}
           themeVariant="dark"
           is24Hour

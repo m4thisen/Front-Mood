@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ScreenContainer } from '@/componentes/ScreenContainer';
-import { GlowButton } from '@/componentes/GlowButton';
-import { StepDots } from '@/componentes/StepDots';
+import { PasoOnboarding } from '@/componentes/PasoOnboarding';
+import { Boton } from '@/componentes/Boton';
+import { Icono } from '@/componentes/Icono';
+import { iconoDeBloque } from '@/componentes/iconosDominio';
 import { colors, radius, spacing, typography } from '@/tema';
+import { hapticos } from '@/utils/hapticos';
 import { useTranslation } from '@/i18n';
 import { useSesionStore } from '@/stores/SesionStore';
 import { RootStackParamList } from '@/navegacion/tipos';
@@ -12,137 +14,128 @@ import { BLOQUES, claveTraduccionBloque, claveTraduccionEtiqueta } from '@/datos
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Bloques'>;
 
+/**
+ * Paso 2 del onboarding: qué bloques de seguimiento aparecen en el registro
+ * diario. Ninguno viene activo por defecto y se puede seguir sin elegir
+ * ninguno (CU-04, flujo A): se cambian después desde Mi cuenta.
+ */
 export const BloquesScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
   const usuario = useSesionStore((s) => s.usuario);
   const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
+  const [elegidos, setElegidos] = useState<Set<string>>(new Set(usuario?.bloquesActivos ?? []));
 
-  const [selected, setSelected] = useState<Set<string>>(new Set(usuario?.bloquesActivos ?? []));
-
-  const toggle = (key: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
+  const alternar = (clave: string) => {
+    hapticos.seleccion();
+    setElegidos((previos) => {
+      const siguientes = new Set(previos);
+      if (siguientes.has(clave)) siguientes.delete(clave);
+      else siguientes.add(clave);
+      return siguientes;
     });
   };
 
-  // Ningún bloque viene activo por defecto y se puede seguir sin elegir
-  // ninguno (CU-04, flujo A): se cambian después desde Mi cuenta.
-  const handleContinue = async () => {
-    await actualizarPreferencias({ bloquesActivos: Array.from(selected) });
+  const continuar = async () => {
+    await actualizarPreferencias({ bloquesActivos: Array.from(elegidos) });
     navigation.navigate('Tags');
   };
 
   return (
-    <ScreenContainer scroll contentStyle={styles.content}>
-      <StepDots total={4} current={1} />
-      <Text style={[typography.displayM, styles.title]}>{t('steps.blocksTitle')}</Text>
-      <Text style={[typography.body, styles.subtitle]}>{t('steps.blocksSubtitle')}</Text>
-
-      {BLOQUES.map((category) => {
-        const isSelected = selected.has(category.clave);
-        return (
-          <Pressable
-            key={category.clave}
-            onPress={() => toggle(category.clave)}
-            style={[styles.categoryCard, isSelected && styles.categoryCardSelected]}
-          >
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryIcon}>{category.icono}</Text>
-              <Text style={[typography.subtitle, styles.categoryTitle]}>{t(claveTraduccionBloque(category.clave))}</Text>
-              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                {isSelected ? <Text style={styles.checkmark}>✓</Text> : null}
-              </View>
-            </View>
-            <Text
-              style={[
-                typography.caption,
-                styles.optionsPreview,
-                isSelected && styles.optionsPreviewSelected,
-              ]}
-              numberOfLines={1}
+    <PasoOnboarding
+      paso={1}
+      titulo={t('steps.blocksTitle')}
+      subtitulo={t('steps.blocksSubtitle')}
+      onAtras={() => navigation.goBack()}
+      pie={
+        <Boton
+          titulo={
+            elegidos.size > 0
+              ? t('steps.blocksContinue').replace('{n}', String(elegidos.size))
+              : t('common.skip')
+          }
+          variante={elegidos.size > 0 ? 'primario' : 'secundario'}
+          onPress={continuar}
+        />
+      }
+    >
+      <View style={styles.grilla}>
+        {BLOQUES.map((bloque) => {
+          const elegido = elegidos.has(bloque.clave);
+          return (
+            <Pressable
+              key={bloque.clave}
+              onPress={() => alternar(bloque.clave)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: elegido }}
+              style={({ pressed }) => [styles.tarjeta, elegido && styles.tarjetaElegida, pressed && styles.presionada]}
             >
-              {category.etiquetas.map((e) => t(claveTraduccionEtiqueta(e.clave))).join(' · ')}
-            </Text>
-          </Pressable>
-        );
-      })}
-
-      <GlowButton
-        label={t('common.continue')}
-        onPress={handleContinue}
-        style={styles.continueButton}
-      />
-    </ScreenContainer>
+              <View style={styles.filaSuperior}>
+                <View style={[styles.cuadroIcono, elegido && styles.cuadroIconoElegido]}>
+                  <Icono
+                    nombre={iconoDeBloque(bloque.clave)}
+                    tamano={16}
+                    relleno={elegido}
+                    color={elegido ? colors.background : colors.textSecondary}
+                  />
+                </View>
+                {elegido && <Icono nombre="check" tamano={14} color={colors.accentStrong} peso="bold" />}
+              </View>
+              <Text style={[typography.headline, styles.nombre]}>{t(claveTraduccionBloque(bloque.clave))}</Text>
+              <Text style={[typography.micro, styles.ejemplos]} numberOfLines={2}>
+                {bloque.etiquetas.map((e) => t(claveTraduccionEtiqueta(e.clave))).join(' · ')}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </PasoOnboarding>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xxxl,
+  grilla: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: spacing.md,
   },
-  title: {
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    marginBottom: spacing.xl,
-  },
-  categoryCard: {
+  tarjeta: {
+    width: '48%',
+    padding: spacing.md,
+    borderRadius: radius.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
   },
-  categoryCardSelected: {
+  tarjetaElegida: {
     backgroundColor: colors.accentSoft,
     borderColor: colors.accent,
   },
-  categoryHeader: {
+  presionada: {
+    opacity: 0.75,
+  },
+  filaSuperior: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
   },
-  categoryIcon: {
-    fontSize: 18,
-    marginRight: spacing.sm,
-  },
-  categoryTitle: {
-    color: colors.textPrimary,
-    flex: 1,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: colors.borderStrong,
+  cuadroIcono: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: colors.fillStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxSelected: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+  cuadroIconoElegido: {
+    backgroundColor: colors.accentStrong,
   },
-  checkmark: {
-    color: colors.background,
-    fontSize: 13,
-    fontWeight: '700',
+  nombre: {
+    color: colors.textPrimary,
   },
-  optionsPreview: {
+  ejemplos: {
     color: colors.textTertiary,
-    marginTop: spacing.sm,
-    marginLeft: 30,
-  },
-  optionsPreviewSelected: {
-    color: colors.textSecondary,
-  },
-  continueButton: {
-    marginTop: spacing.lg,
+    marginTop: 4,
   },
 });

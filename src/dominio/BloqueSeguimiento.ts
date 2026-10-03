@@ -13,6 +13,5 @@ export interface Etiqueta {
 export interface BloqueSeguimiento {
   clave: string;
   orden: number;
-  icono: string;
   etiquetas: Etiqueta[];
 }

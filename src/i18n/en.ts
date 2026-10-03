@@ -20,7 +20,8 @@ const en: Record<string, string> = {
   'common.close': 'Close',
 
   'welcome.description': 'A calm place to log how your day went, night after night.',
-  'welcome.login': 'Log in',
+  'welcome.login': 'I already have an account',
+  'welcome.disclaimer': 'Mood is a personal wellbeing tool. It does not replace professional care.',
   'welcome.register': 'Create account',
   'welcome.languageLabel': 'Language',
 
@@ -29,7 +30,7 @@ const en: Record<string, string> = {
   'register.name': 'Name',
   'register.namePlaceholder': 'Your name',
   'register.birthDate': 'Date of birth',
-  'register.birthDatePlaceholder': 'YYYY-MM-DD',
+  'register.birthDatePlaceholder': 'Pick your date',
   'register.age': 'You are {edad} years old',
   'register.gender': 'Gender',
   'register.gender.FEMENINO': 'Female',
@@ -38,11 +39,14 @@ const en: Record<string, string> = {
   'register.gender.PREFIERO_NO_DECIR': 'Prefer not to say',
 
   'steps.blocksTitle': 'Pick your blocks',
-  'steps.blocksSubtitle': "Choose the areas of your life you'd like to track. You can change this later.",
+  'steps.blocksSubtitle': 'The areas of your life you want to track in your daily log. You can change them anytime.',
   'steps.tagsTitle': 'Your own tags',
   'steps.tagsSubtitle': 'Add anything you want to track that is not in the blocks, like "Sold a car". It is optional: you can do it later from Account.',
   'steps.notificationTitle': 'Your daily reminder',
   'steps.notificationSubtitle': "Choose what time you'd like to be reminded.",
+  'steps.notificationCta': 'Turn on reminder',
+  'steps.notificationHint': 'We will ask for permission to send you notifications. If you already logged your day, we will not bother you.',
+  'steps.blocksContinue': 'Continue with {n}',
   'steps.pickTime': 'Reminder time',
   'steps.notificationDeniedTitle': 'Reminder turned off',
   'steps.notificationDeniedBody': "We don't have permission to send you notifications. You can enable it anytime from your phone settings.",
@@ -296,8 +300,8 @@ const en: Record<string, string> = {
 
   'coach.todayStep': 'Tap here to log your day!',
 
-  'soulReveal.title': 'This is your Soul Color',
-  'soulReveal.description': "It'll shift with every day you log. It doesn't have its own color yet — it's yours starting today.",
+  'soulReveal.title': '{nombre}, this is your Soul Color',
+  'soulReveal.description': 'It will take on the color of every day you log. Starting today, it is yours.',
   'soulReveal.cta': 'Get started',
 
   'welcome.googleError': "We couldn't connect to Google, please try again"

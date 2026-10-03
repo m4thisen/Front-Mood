@@ -1,61 +1,72 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { ScreenContainer } from '@/componentes/ScreenContainer';
-import { GlowButton } from '@/componentes/GlowButton';
 import { SoulOrb } from '@/componentes/SoulOrb';
+import { Boton } from '@/componentes/Boton';
 import { colors, spacing, typography } from '@/tema';
-import { useTranslation } from '@/i18n';
 import { moodScale } from '@/tema/colors';
+import { useTranslation } from '@/i18n';
 import { useSesionStore } from '@/stores/SesionStore';
+import { hapticos } from '@/utils/hapticos';
 
+/**
+ * Cierre del onboarding: presenta el Color del Alma. Al completar el
+ * onboarding, el navegador pasa solo a la app principal.
+ */
 export const ColorDelAlmaScreen: React.FC = () => {
   const { t } = useTranslation();
-  // Al completar el onboarding el navegador pasa solo a la app principal.
+  const nombre = useSesionStore((s) => s.usuario?.nombre ?? '');
   const completarOnboarding = useSesionStore((s) => s.completarOnboarding);
 
+  const empezar = () => {
+    hapticos.exito();
+    completarOnboarding();
+  };
+
   return (
-    <ScreenContainer contentStyle={styles.content}>
-      <View style={styles.center}>
-        <Animated.View entering={FadeIn.duration(900)}>
-          <SoulOrb color={moodScale[3].color} size={140} />
+    <SafeAreaView style={styles.pantalla}>
+      <View style={styles.centro}>
+        <Animated.View entering={FadeIn.duration(1100)}>
+          <SoulOrb color={moodScale[3].color} size={168} />
         </Animated.View>
-        <Animated.Text entering={FadeInDown.delay(400).duration(600)} style={[typography.displayL, styles.title]}>
-          {t('soulReveal.title')}
+        <Animated.Text entering={FadeInDown.delay(500).duration(600)} style={[typography.displayL, styles.titulo]}>
+          {t('soulReveal.title').replace('{nombre}', nombre)}
         </Animated.Text>
-        <Animated.Text entering={FadeInDown.delay(550).duration(600)} style={[typography.body, styles.desc]}>
+        <Animated.Text entering={FadeInDown.delay(700).duration(600)} style={[typography.body, styles.texto]}>
           {t('soulReveal.description')}
         </Animated.Text>
       </View>
-      <Animated.View entering={FadeInDown.delay(700).duration(600)}>
-        <GlowButton
-          label={t('soulReveal.cta')}
-          onPress={completarOnboarding}
-        />
+      <Animated.View entering={FadeInDown.delay(900).duration(600)} style={styles.pie}>
+        <Boton titulo={t('soulReveal.cta')} onPress={empezar} />
       </Animated.View>
-    </ScreenContainer>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xxxl,
+  pantalla: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  center: {
+  centro: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
   },
-  title: {
+  titulo: {
     color: colors.textPrimary,
-    marginTop: spacing.xl,
     textAlign: 'center',
+    marginTop: spacing.xxl,
   },
-  desc: {
+  texto: {
     color: colors.textSecondary,
     textAlign: 'center',
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
+  },
+  pie: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.sm,
   },
 });

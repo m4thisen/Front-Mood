@@ -20,7 +20,8 @@ const es: Record<string, string> = {
   'common.close': 'Cerrar',
 
   'welcome.description': 'Un lugar tranquilo para registrar cómo estuvo tu día, noche a noche.',
-  'welcome.login': 'Iniciar sesión',
+  'welcome.login': 'Ya tengo cuenta',
+  'welcome.disclaimer': 'Mood es una herramienta de bienestar personal. No reemplaza la atención profesional.',
   'welcome.register': 'Crear cuenta',
   'welcome.languageLabel': 'Idioma',
 
@@ -29,7 +30,7 @@ const es: Record<string, string> = {
   'register.name': 'Nombre',
   'register.namePlaceholder': 'Tu nombre',
   'register.birthDate': 'Fecha de nacimiento',
-  'register.birthDatePlaceholder': 'AAAA-MM-DD',
+  'register.birthDatePlaceholder': 'Elegí tu fecha',
   'register.age': 'Tenés {edad} años',
   'register.gender': 'Género',
   'register.gender.FEMENINO': 'Femenino',
@@ -38,11 +39,14 @@ const es: Record<string, string> = {
   'register.gender.PREFIERO_NO_DECIR': 'Prefiero no decir',
 
   'steps.blocksTitle': 'Elegí tus bloques',
-  'steps.blocksSubtitle': 'Seleccioná las áreas de tu vida que querés registrar. Podés cambiarlo después.',
+  'steps.blocksSubtitle': 'Las áreas de tu vida que querés seguir en tu registro diario. Podés cambiarlas cuando quieras.',
   'steps.tagsTitle': 'Tus propios tags',
   'steps.tagsSubtitle': 'Sumá lo que quieras seguir y no está en los bloques, por ejemplo "Vendí un auto". Es opcional: podés hacerlo después desde Mi cuenta.',
   'steps.notificationTitle': 'Tu recordatorio diario',
   'steps.notificationSubtitle': 'Elegí a qué hora te gustaría que te lo recordemos.',
+  'steps.notificationCta': 'Activar recordatorio',
+  'steps.notificationHint': 'Te vamos a pedir permiso para enviarte notificaciones. Si ya registraste el día, no te molestamos.',
+  'steps.blocksContinue': 'Continuar con {n}',
   'steps.pickTime': 'Hora del recordatorio',
   'steps.notificationDeniedTitle': 'Recordatorio desactivado',
   'steps.notificationDeniedBody': 'No tenemos permiso para enviarte notificaciones. Podés habilitarlo cuando quieras desde los ajustes del teléfono.',
@@ -296,8 +300,8 @@ const es: Record<string, string> = {
 
   'coach.todayStep': '¡Tocá acá para registrar tu día!',
 
-  'soulReveal.title': 'Este es tu Color del Alma',
-  'soulReveal.description': 'Va a ir cambiando con cada día que registres. Todavía no tiene color propio — es tuyo desde hoy.',
+  'soulReveal.title': '{nombre}, este es tu Color del Alma',
+  'soulReveal.description': 'Va a ir tomando el color de cada día que registres. Hoy empieza a ser tuyo.',
   'soulReveal.cta': 'Empezar',
 
   'welcome.googleError': 'No pudimos conectar con Google, probá de nuevo'

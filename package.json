@@ -7,7 +7,8 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "TZ=America/Argentina/Buenos_Aires jest"
   },
   "dependencies": {
     "@expo-google-fonts/fraunces": "^0.4.1",
@@ -44,7 +45,17 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
+    "@jest/globals": "^29.7.0",
+    "@react-native/jest-preset": "^0.86.3",
     "@types/react": "~19.2.2",
+    "jest": "~29.7.0",
+    "jest-expo": "~57.0.5",
     "typescript": "~6.0.3"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    }
   }
 }

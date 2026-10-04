@@ -31,6 +31,21 @@ src/
   en la app: solo el servidor habla con esos servicios.
 - Todos los textos están en español e inglés (`src/i18n`).
 
+## Diseño
+
+- **Tokens** en `src/tema/` (colores, tipografía, espaciado, radios). La
+  escala de cinco colores del ánimo es la identidad de la app y siempre va
+  acompañada de una etiqueta o de la cara, nunca sola.
+- **Íconos**: SF Symbols en iOS y Material Symbols en Android, vía
+  `expo-symbols`. Todos pasan por `componentes/Icono.tsx`, que los nombra
+  por su significado (`calendario`, `racha`, `bloqueEstudios`, …).
+- **Piezas base**: `Boton`, `Chip`, `Lista` (filas al estilo Ajustes),
+  `HojaInferior` (hoja que sube desde abajo), `PasoOnboarding` (esqueleto
+  de cada paso) y `Encabezados`.
+- Respuesta háptica en las acciones importantes (`utils/hapticos`).
+- En desarrollo, la Bienvenida ofrece una **cuenta demo** con 60 días de
+  datos para ver todas las pantallas cargadas.
+
 ## Requisitos
 
 - Node.js LTS y npm
@@ -69,7 +84,8 @@ npx expo prebuild --platform ios --clean
 Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
 
 - [x] **Iteración 0 — Base del proyecto**: Expo SDK 57, estructura por capas,
-  entidades, stores, navegación, i18n, Jest.
+  entidades, stores, navegación, i18n, Jest y rediseño visual de todas las
+  pantallas.
 - [ ] Iteración 1 — Acceso y configuración (login con Google, sesiones)
 - [ ] Iteración 2 — Registro diario (SQLite, recordatorio)
 - [ ] Iteración 3 — Sincronización

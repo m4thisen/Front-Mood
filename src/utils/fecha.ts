@@ -16,6 +16,13 @@ export const todayISO = (): string => toISODate(new Date());
 export const dateLocale = (lang: Idioma) => (lang === 'es' ? es : enUS);
 
 /**
+ * Locale para los selectores nativos de fecha y hora. En iOS es lo que
+ * define el formato de la hora (`is24Hour` solo aplica en Android); se usa
+ * es-ES porque es-AR muestra a. m. / p. m.
+ */
+export const localeSelector = (lang: Idioma): string => (lang === 'es' ? 'es-ES' : 'en-US');
+
+/**
  * Devuelve una grilla de semanas (arrays de 7 fechas) que cubre el mes
  * completo, incluyendo días de relleno del mes anterior/siguiente para
  * completar semanas de domingo a sábado.

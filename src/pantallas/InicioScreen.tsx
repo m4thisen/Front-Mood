@@ -70,7 +70,6 @@ export const InicioScreen: React.FC = () => {
       pie={
         <CoachMark
           message={t('coach.todayStep')}
-          step="1/1"
           visible={mostrarAyuda}
           onDismiss={cerrarAyuda}
           bottom={altoBarra + spacing.sm}

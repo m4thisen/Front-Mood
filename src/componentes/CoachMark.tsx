@@ -1,10 +1,10 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { colors, radius, spacing, typography } from '@/tema';
 
 interface Props {
   message: string;
-  step: string; // ej. "1/2"
   visible: boolean;
   onDismiss: () => void;
   /** Distancia al borde inferior: justo encima de la barra. */
@@ -12,17 +12,22 @@ interface Props {
 }
 
 /** Globo de ayuda que apunta hacia abajo (al botón "Hoy" del navbar). */
-export const CoachMark: React.FC<Props> = ({ message, step, visible, onDismiss, bottom }) => {
+export const CoachMark: React.FC<Props> = ({ message, visible, onDismiss, bottom }) => {
   if (!visible) return null;
 
   return (
-    <Pressable onPress={onDismiss} style={[styles.wrapper, { bottom }]} accessibilityRole="button">
-      <View style={styles.bubble}>
-        <Text style={[typography.bodyMedium, styles.message]}>{message}</Text>
-        <Text style={[typography.caption, styles.step]}>{step}</Text>
-      </View>
-      <View style={styles.arrow} />
-    </Pressable>
+    <Animated.View
+      entering={FadeInDown.delay(600).duration(400)}
+      exiting={FadeOut.duration(150)}
+      style={[styles.wrapper, { bottom }]}
+    >
+      <Pressable onPress={onDismiss} accessibilityRole="button" style={styles.pressable}>
+        <View style={styles.bubble}>
+          <Text style={[typography.bodyMedium, styles.message]}>{message}</Text>
+        </View>
+        <View style={styles.arrow} />
+      </Pressable>
+    </Animated.View>
   );
 };
 
@@ -30,6 +35,9 @@ const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
     right: 16,
+    alignItems: 'flex-end',
+  },
+  pressable: {
     alignItems: 'flex-end',
   },
   bubble: {
@@ -41,10 +49,6 @@ const styles = StyleSheet.create({
   },
   message: {
     color: colors.background,
-  },
-  step: {
-    color: 'rgba(5,11,30,0.6)',
-    marginTop: 2,
   },
   arrow: {
     width: 14,

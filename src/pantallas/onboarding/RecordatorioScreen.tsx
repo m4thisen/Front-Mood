@@ -11,6 +11,7 @@ import { useSesionStore } from '@/stores/SesionStore';
 import { RootStackParamList } from '@/navegacion/tipos';
 import { programarRecordatorio } from '@/servicios/NotificacionService';
 import { formatearHora, HORA_RECORDATORIO_POR_DEFECTO, partesHora } from '@/dominio';
+import { localeSelector } from '@/utils/fecha';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Recordatorio'>;
 
@@ -23,7 +24,7 @@ const aFecha = (horaTexto: string): Date => {
 
 /** Paso 4 del onboarding (CU-04, pasos 7 a 10): hora del recordatorio diario. */
 export const RecordatorioScreen: React.FC<Props> = ({ navigation }) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const horaGuardada = useSesionStore((s) => s.usuario?.horaRecordatorio);
   const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
 
@@ -57,6 +58,7 @@ export const RecordatorioScreen: React.FC<Props> = ({ navigation }) => {
           style={{ height: 216 }}
           onChange={(_e: DateTimePickerEvent, fecha?: Date) => fecha && setHora(fecha)}
           themeVariant="dark"
+          locale={localeSelector(language)}
           is24Hour
         />
       </View>

@@ -15,6 +15,7 @@ import { iconoDeBloque } from '@/componentes/iconosDominio';
 import { useAltoBarraInferior } from '@/componentes/TabBar';
 import { colors, radius, spacing, typography } from '@/tema';
 import { shade } from '@/utils/color';
+import { localeSelector } from '@/utils/fecha';
 import { hapticos } from '@/utils/hapticos';
 import { useTranslation } from '@/i18n';
 import { useSesionStore, useTagsActivos } from '@/stores/SesionStore';
@@ -234,6 +235,7 @@ export const CuentaScreen: React.FC = () => {
           style={{ height: 216 }}
           onChange={(_e: DateTimePickerEvent, fecha?: Date) => fecha && setHoraBorrador(fecha)}
           themeVariant="dark"
+          locale={localeSelector(language)}
           is24Hour
         />
       </HojaInferior>

@@ -67,13 +67,19 @@ export const EditorTags: React.FC = () => {
         maxLength={LARGO_MAXIMO_NOMBRE_TAG}
         placeholder={t('account.newTagPlaceholder')}
         placeholderTextColor={colors.textTertiary}
-        style={styles.tagInput}
+        style={[typography.bodyMedium, styles.tagInput]}
+        returnKeyType="done"
+        onSubmitEditing={() => nombre.trim() && agregar()}
+        submitBehavior="blurAndSubmit"
       />
       {error && <Text style={[typography.caption, styles.error]}>{t(MENSAJES_ERROR[error])}</Text>}
       <View style={styles.tagTypeRow}>
         <Chip etiqueta={t('tags.typeYesNo')} seleccionado={tipo === 'SI_NO'} onPress={() => setTipo('SI_NO')} />
         <Chip etiqueta={t('tags.typeText')} seleccionado={tipo === 'TEXTO'} onPress={() => setTipo('TEXTO')} />
       </View>
+      <Text style={[typography.footnote, styles.pistaTipo]}>
+        {t(tipo === 'SI_NO' ? 'tags.typeYesNoHint' : 'tags.typeTextHint')}
+      </Text>
       <Boton titulo={t('account.addCustomTag')} icono="agregar" onPress={agregar} variante="secundario" deshabilitado={!nombre.trim()} />
     </View>
   );
@@ -99,17 +105,13 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   tagInput: {
-    backgroundColor: colors.fill,
+    backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
     borderRadius: radius.md,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    minHeight: 52,
+    paddingHorizontal: spacing.lg,
     color: colors.textPrimary,
-    fontFamily: 'Manrope_500Medium',
-    fontSize: 14,
-    marginTop: spacing.xs,
   },
   error: {
     color: colors.danger,
@@ -118,7 +120,11 @@ const styles = StyleSheet.create({
   tagTypeRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  pistaTipo: {
+    color: colors.textTertiary,
     marginTop: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
 });

@@ -46,6 +46,8 @@ export async function cargarCuentaDemo(idioma: 'es' | 'en'): Promise<string> {
     // Algunos días sin registrar (para que la racha tenga cortes), salvo la última semana.
     if (i > 7 && azar(i * 3.7) < 0.14) continue;
     const fecha = subDays(hoy, i);
+    // Se puede cargar más de una vez: no pisa días que ya tienen registro.
+    if (await RegistroLocal.obtenerPorFecha(usuario.id, toISODate(fecha))) continue;
     const hizoEjercicio = azar(i * 1.3) < 0.45;
     const horasSueno = Math.round((5 + azar(i * 2.1) * 4) * 2) / 2;
     const medito = azar(i * 5.9) < 0.3;
@@ -68,7 +70,7 @@ export async function cargarCuentaDemo(idioma: 'es' | 'en'): Promise<string> {
     horaCarga.setHours(20 + Math.floor(azar(i * 2.9) * 3), Math.floor(azar(i * 3.3) * 60), 0, 0);
 
     const registro: RegistroDiario = {
-      id: `demo-registro-${i}`,
+      id: `demo-registro-${toISODate(fecha)}`,
       usuarioId: usuario.id,
       fecha: toISODate(fecha),
       nivelAnimo: nivel,

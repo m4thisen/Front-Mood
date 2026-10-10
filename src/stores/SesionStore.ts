@@ -15,6 +15,7 @@ import { ErrorTag, Idioma, TagPersonalizado, TipoTag, Usuario, validarNombreTag 
 import { ErrorApi } from '@/api/ApiClient';
 import { aTag, aUsuario, PerfilApi, TagApi } from '@/api/perfil';
 import * as UsuarioLocal from '@/persistencia/UsuarioLocalRepository';
+import { borrarDatosAnteriores } from '@/persistencia/datosAnteriores';
 import { api, authService, cuentaDePrueba } from '@/servicios/conexion';
 import { PreferenciasPendientes } from '@/servicios/PreferenciasPendientes';
 import { useRegistroStore } from './RegistroStore';
@@ -59,6 +60,7 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
   sesionVencida: false,
 
   cargar: async () => {
+    await borrarDatosAnteriores().catch(() => undefined);
     const usuarioId = await UsuarioLocal.obtenerSesionActiva();
     const usuario = usuarioId ? await UsuarioLocal.obtener(usuarioId) : null;
     // La cuenta demo no tiene sesión en el servidor; las demás necesitan sus tokens.

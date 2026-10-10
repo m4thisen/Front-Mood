@@ -27,7 +27,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.64652794829-k11tg09m1soe0cq626883mrp5f5hqcrl"
         }
-      ]
+      ],
+      "expo-sqlite"
     ]
   }
 }

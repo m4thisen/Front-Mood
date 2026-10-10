@@ -13,7 +13,7 @@ import { ErrorTag, Idioma, TagPersonalizado, TipoTag, Usuario, validarNombreTag 
 import { ErrorApi } from '@/api/ApiClient';
 import { aTag, aUsuario, PerfilApi, TagApi } from '@/api/perfil';
 import * as UsuarioLocal from '@/persistencia/UsuarioLocalRepository';
-import { api, authService } from '@/servicios/conexion';
+import { api, authService, cuentaDePrueba } from '@/servicios/conexion';
 import { useRegistroStore } from './RegistroStore';
 import { cargarCuentaDemo, ID_USUARIO_DEMO } from '@/datos/demo';
 
@@ -30,8 +30,11 @@ interface EstadoSesion {
   sesionVencida: boolean;
   /** Al abrir la app recupera la sesión que haya quedado abierta (RF-03). */
   cargar: () => Promise<void>;
-  /** CU-01 y CU-02. Devuelve null si entró o si la persona canceló. */
-  iniciarSesion: (idioma: Idioma) => Promise<ErrorIngreso | null>;
+  /**
+   * CU-01 y CU-02. Devuelve null si entró o si la persona canceló. En
+   * desarrollo se puede entrar con una cuenta de prueba en lugar de Google.
+   */
+  iniciarSesion: (idioma: Idioma, conCuentaDePrueba?: boolean) => Promise<ErrorIngreso | null>;
   actualizarPreferencias: (cambios: CambiosPreferencias) => Promise<void>;
   completarOnboarding: () => Promise<void>;
   crearTag: (nombre: string, tipo: TipoTag) => Promise<ErrorTag | null>;
@@ -63,10 +66,11 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
     set({ cargando: false });
   },
 
-  iniciarSesion: async (idioma) => {
+  iniciarSesion: async (idioma, conCuentaDePrueba = false) => {
     set({ sesionVencida: false });
     try {
-      const ingreso = await authService.ingresarConGoogle(idioma);
+      const identidad = conCuentaDePrueba && cuentaDePrueba ? cuentaDePrueba : undefined;
+      const ingreso = await authService.ingresarConGoogle(idioma, identidad);
       if (!ingreso) return null;
 
       // CU-02: el perfil y los tags vienen del servidor (en una cuenta nueva, vacíos).

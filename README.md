@@ -71,12 +71,18 @@ veces alcanza con `npx expo start` y abrir la app ya instalada.
 Para entrar hace falta el servidor ([mood-app-back](https://github.com/m4thisen/mood-app-back))
 corriendo con `npm run dev`. En el simulador la app lo busca en
 `http://localhost:3000`; para otra dirección, copiá `.env.example` a `.env` y
-cambiá `EXPO_PUBLIC_API_URL`. Hasta conectar Google, en desarrollo se entra
-con una cuenta de prueba: la app pide un email cualquiera y el mismo email
-entra siempre a la misma cuenta (el servidor tiene que estar con
-`MODO_IDENTIDAD=simulado`).
+cambiá `EXPO_PUBLIC_API_URL`.
 
-Si cambiás dependencias nativas o `app.json`, regenerá el proyecto de iOS:
+Se entra con Google. Mientras el proyecto de Google Cloud esté en modo de
+prueba, solo pueden entrar las cuentas agregadas como usuarios de prueba en
+la consola (Google Auth Platform → Público). En desarrollo también hay una
+**cuenta de prueba**: la app pide un email cualquiera y el mismo email entra
+siempre a la misma cuenta, para probar con varias cuentas (el servidor tiene
+que estar con `CUENTAS_DE_PRUEBA=true`).
+
+Si cambiás dependencias nativas o `app.json`, regenerá el proyecto de iOS (si
+`pod install` falla con un error de codificación, antes corré
+`export LANG=en_US.UTF-8`):
 
 ```bash
 npx expo prebuild --platform ios --clean

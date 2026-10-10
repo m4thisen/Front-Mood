@@ -16,6 +16,8 @@ import { AlmacenSeguro, TokensGuardados } from '@/persistencia/AlmacenSeguro';
 /** De dónde sale el idToken de Google. Null si la persona canceló. */
 export interface ProveedorIdentidad {
   obtenerIdToken(): Promise<string | null>;
+  /** Olvida la cuenta elegida, si el proveedor la recuerda. */
+  cerrar?(): Promise<void>;
 }
 
 interface RespuestaIngreso extends TokensGuardados {
@@ -36,10 +38,14 @@ export class AuthService implements ProveedorSesion {
 
   /**
    * CU-01 y CU-02: el mismo camino para crear cuenta y para entrar; el
-   * servidor decide. Devuelve null si la persona canceló.
+   * servidor decide. Devuelve null si la persona canceló. En desarrollo se
+   * le puede pasar una cuenta de prueba en lugar de Google.
    */
-  async ingresarConGoogle(idioma: Idioma): Promise<{ esNuevo: boolean } | null> {
-    const idToken = await this.identidad.obtenerIdToken();
+  async ingresarConGoogle(
+    idioma: Idioma,
+    identidad: ProveedorIdentidad = this.identidad
+  ): Promise<{ esNuevo: boolean } | null> {
+    const idToken = await identidad.obtenerIdToken();
     if (!idToken) return null;
 
     const respuesta = await this.api.post<RespuestaIngreso>(
@@ -85,6 +91,7 @@ export class AuthService implements ProveedorSesion {
           .post('/auth/logout', { refreshToken: tokens.refreshToken }, { publico: true })
           .catch(() => undefined);
       }
+      void this.identidad.cerrar?.().catch(() => undefined);
     } finally {
       this.cerrando = false;
     }

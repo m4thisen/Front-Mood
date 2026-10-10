@@ -15,7 +15,7 @@ import { hapticos } from '@/utils/hapticos';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Bienvenida'>;
 
-type Accion = 'registro' | 'ingreso';
+type Accion = 'registro' | 'ingreso' | 'prueba';
 
 const MENSAJES: Record<Exclude<ErrorIngreso, 'NO_SE_PUDO'>, string> = {
   SIN_CONEXION: 'No pudimos conectarnos. Revisá tu conexión y probá de nuevo.',
@@ -25,8 +25,8 @@ const MENSAJES: Record<Exclude<ErrorIngreso, 'NO_SE_PUDO'>, string> = {
 /**
  * Bienvenida (CU-01 y CU-02). Solo se entra con cuenta de Google: "Crear
  * cuenta" e "Iniciar sesión" usan el mismo endpoint (POST /auth/google) y
- * es el servidor el que decide si crea o si entra. Hasta conectar Google, en
- * desarrollo se entra con una identidad simulada.
+ * es el servidor el que decide si crea o si entra. En desarrollo también se
+ * puede entrar con una cuenta de prueba o con la cuenta demo.
  */
 export const BienvenidaScreen: React.FC<Props> = () => {
   const { t, language, setLanguage } = useTranslation();
@@ -39,7 +39,7 @@ export const BienvenidaScreen: React.FC<Props> = () => {
   const ingresar = async (accion: Accion) => {
     setError(null);
     setEnCurso(accion);
-    const resultado = await iniciarSesion(language);
+    const resultado = await iniciarSesion(language, accion === 'prueba');
     setEnCurso(null);
     if (resultado) {
       setError(resultado);
@@ -111,12 +111,21 @@ export const BienvenidaScreen: React.FC<Props> = () => {
           deshabilitado={enCurso !== null}
         />
         {__DEV__ && (
-          <Boton
-            titulo="Cuenta demo (desarrollo)"
-            variante="texto"
-            onPress={() => entrarConCuentaDemo(language)}
-            deshabilitado={enCurso !== null}
-          />
+          <>
+            <Boton
+              titulo="Cuenta de prueba (desarrollo)"
+              variante="texto"
+              onPress={() => ingresar('prueba')}
+              cargando={enCurso === 'prueba'}
+              deshabilitado={enCurso !== null}
+            />
+            <Boton
+              titulo="Cuenta demo (desarrollo)"
+              variante="texto"
+              onPress={() => entrarConCuentaDemo(language)}
+              deshabilitado={enCurso !== null}
+            />
+          </>
         )}
         <Text style={[typography.micro, styles.descargo]}>{t('welcome.disclaimer')}</Text>
       </Animated.View>

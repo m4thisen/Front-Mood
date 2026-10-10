@@ -6,7 +6,8 @@
 import { ApiClient } from '@/api/ApiClient';
 import { zonaHorariaDelDispositivo } from '@/dominio';
 import { AlmacenSeguro } from '@/persistencia/AlmacenSeguro';
-import { AuthService } from './AuthService';
+import { AuthService, ProveedorIdentidad } from './AuthService';
+import { identidadGoogle } from './IdentidadGoogle';
 import { identidadSimulada } from './IdentidadSimulada';
 
 /**
@@ -28,4 +29,7 @@ export const api: ApiClient = new ApiClient(urlApi(), {
   renovar: (tokenVencido) => authService.renovar(tokenVencido),
 });
 
-export const authService: AuthService = new AuthService(api, new AlmacenSeguro(), identidadSimulada, zonaHorariaDelDispositivo);
+export const authService: AuthService = new AuthService(api, new AlmacenSeguro(), identidadGoogle, zonaHorariaDelDispositivo);
+
+/** Solo en desarrollo: entrar con varias cuentas sin una de Google para cada una. */
+export const cuentaDePrueba: ProveedorIdentidad | null = __DEV__ ? identidadSimulada : null;

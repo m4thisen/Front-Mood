@@ -1,7 +1,7 @@
 /**
- * Identidad simulada, solo para desarrollo, hasta conectar Google (paso 5 de
- * la iteración 1). El servidor la acepta únicamente con MODO_IDENTIDAD=simulado,
- * que no puede usarse en producción.
+ * Cuentas de prueba, solo para desarrollo: para entrar con varias cuentas sin
+ * tener una de Google para cada una. El servidor las acepta únicamente con
+ * CUENTAS_DE_PRUEBA=true, que no puede usarse en producción.
  *
  * Pide un email y arma "simulado:<usuario>:<email>": el mismo email entra
  * siempre a la misma cuenta, así se prueban CU-01 (nueva) y CU-02 (existente).
@@ -27,7 +27,7 @@ export const identidadSimulada: ProveedorIdentidad = {
     return new Promise((resolver) => {
       Alert.prompt(
         'Cuenta de prueba',
-        'Hasta conectar Google, escribí cualquier email. El mismo email entra siempre a la misma cuenta.',
+        'Escribí cualquier email. El mismo email entra siempre a la misma cuenta.',
         [
           { text: 'Cancelar', style: 'cancel', onPress: () => resolver(null) },
           { text: 'Entrar', onPress: (email?: string) => resolver(tokenSimulado(email ?? '')) },

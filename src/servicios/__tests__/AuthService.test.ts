@@ -22,7 +22,7 @@ beforeEach(() => {
   servidor = new ServidorFalso();
   llavero = new LlaveroEnMemoria();
   almacen = new AlmacenSeguro(llavero);
-  identidad = { obtenerIdToken: async () => ID_TOKEN };
+  identidad = { obtenerIdToken: async () => ID_TOKEN, cerrar: jest.fn(async () => undefined) };
   api = new ApiClient(
     URL_FALSA,
     { tokenAcceso: () => auth.tokenAcceso(), renovar: (t) => auth.renovar(t) },
@@ -43,6 +43,14 @@ describe('AuthService · entrar (CU-01, CU-02)', () => {
     });
     expect(await almacen.leerTokens()).toEqual({ accessToken: 'acceso-1', refreshToken: 'refresco-1' });
     expect(await auth.haySesion()).toBe(true);
+  });
+
+  it('en desarrollo puede entrar con una cuenta de prueba en lugar de Google', async () => {
+    const prueba: ProveedorIdentidad = { obtenerIdToken: async () => 'simulado:otra:otra@ejemplo.com' };
+
+    await auth.ingresarConGoogle('en', prueba);
+
+    expect(servidor.pedidosA('/auth/google')[0].cuerpo).toMatchObject({ idToken: 'simulado:otra:otra@ejemplo.com' });
   });
 
   it('si la persona cancela, no se llama al servidor', async () => {
@@ -110,6 +118,12 @@ describe('AuthService · cerrar sesión (CU-03)', () => {
     await esperarPedidosPendientes();
     expect(servidor.pedidosA('/auth/logout')[0].cuerpo).toEqual({ refreshToken: 'refresco-1' });
     expect(servidor.sesionesAbiertas()).toBe(0);
+  });
+
+  it('olvida la cuenta de Google elegida, para poder entrar con otra', async () => {
+    await auth.cerrarSesion();
+
+    expect(identidad.cerrar).toHaveBeenCalledTimes(1);
   });
 
   it('sin conexión, igual borra los tokens del dispositivo', async () => {

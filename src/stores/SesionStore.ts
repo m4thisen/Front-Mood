@@ -6,7 +6,8 @@
  * La sesión se abre contra el servidor (AuthService), pero después la app
  * funciona con lo guardado en el dispositivo: abrirla no necesita conexión.
  * Cada cambio de perfil, preferencias o tags se guarda primero acá y después
- * se manda al servidor (PreferenciasPendientes), como en CU-04.
+ * se manda al servidor (PreferenciasPendientes), como en CU-04. También
+ * mantiene programado el recordatorio diario (NotificacionService, CU-13).
  */
 import { useMemo } from 'react';
 import { create } from 'zustand';
@@ -16,6 +17,8 @@ import { ErrorApi } from '@/api/ApiClient';
 import { aTag, aUsuario, PerfilApi, TagApi } from '@/api/perfil';
 import * as UsuarioLocal from '@/persistencia/UsuarioLocalRepository';
 import { borrarDatosAnteriores } from '@/persistencia/datosAnteriores';
+import * as PreferenciasDispositivo from '@/persistencia/PreferenciasDispositivo';
+import * as NotificacionService from '@/servicios/NotificacionService';
 import { api, authService, cuentaDePrueba } from '@/servicios/conexion';
 import { PreferenciasPendientes } from '@/servicios/PreferenciasPendientes';
 import { useRegistroStore } from './RegistroStore';
@@ -32,6 +35,8 @@ interface EstadoSesion {
   tags: TagPersonalizado[];
   /** La sesión se cerró sola (venció o se revocó): la bienvenida lo avisa. */
   sesionVencida: boolean;
+  /** Se quitó el permiso de notificaciones que el recordatorio tenía (CU-13, E1). */
+  recordatorioSinPermiso: boolean;
   /** Al abrir la app recupera la sesión que haya quedado abierta (RF-03). */
   cargar: () => Promise<void>;
   /**
@@ -49,6 +54,12 @@ interface EstadoSesion {
   cerrarSesion: () => Promise<void>;
   /** Reintenta mandar al servidor lo que haya quedado pendiente. */
   sincronizarPreferencias: () => Promise<void>;
+  /**
+   * Vuelve a armar los avisos del recordatorio con la hora elegida, salteando
+   * los días ya registrados. Devuelve false si no hay permiso.
+   */
+  programarRecordatorio: (pedirPermiso?: boolean) => Promise<boolean>;
+  descartarAvisoPermiso: () => void;
   /** Solo en desarrollo: entra con la cuenta de demostración. */
   entrarConCuentaDemo: (idioma: Idioma) => Promise<void>;
 }
@@ -58,6 +69,7 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
   usuario: null,
   tags: [],
   sesionVencida: false,
+  recordatorioSinPermiso: false,
 
   cargar: async () => {
     await borrarDatosAnteriores().catch(() => undefined);
@@ -153,7 +165,7 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
   // CU-03: antes de revocar la sesión intenta mandar lo pendiente. Los datos
   // locales se conservan bajo el id del usuario: si no hubo conexión, se
   // mandan la próxima vez que entre. La sincronización de los registros se
-  // suma en la iteración 3.
+  // suma en la iteración 3. Los recordatorios se cancelan.
   cerrarSesion: async () => {
     const usuario = get().usuario;
     if (usuario && usuario.id !== ID_USUARIO_DEMO) {
@@ -167,6 +179,28 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
     const usuario = get().usuario;
     if (usuario && usuario.id !== ID_USUARIO_DEMO) await preferencias.enviar(usuario.id);
   },
+
+  programarRecordatorio: async (pedirPermiso = false) => {
+    const usuario = get().usuario;
+    if (!usuario) return false;
+    const registrados = Object.keys(useRegistroStore.getState().registros);
+    const programado = await NotificacionService.programarRecordatorio(usuario.horaRecordatorio, registrados, {
+      pedirPermiso,
+    });
+    // CU-13, E1: si tenía permiso y ya no, se avisa una sola vez.
+    if (programado) {
+      await PreferenciasDispositivo.guardarRecordatorioPermitido(true);
+    } else if (
+      (await PreferenciasDispositivo.recordatorioPermitido()) &&
+      !(await NotificacionService.tienePermiso().catch(() => true))
+    ) {
+      await PreferenciasDispositivo.guardarRecordatorioPermitido(false);
+      set({ recordatorioSinPermiso: true });
+    }
+    return programado;
+  },
+
+  descartarAvisoPermiso: () => set({ recordatorioSinPermiso: false }),
 
   entrarConCuentaDemo: async (idioma) => {
     await cargarCuentaDemo(idioma);
@@ -216,9 +250,17 @@ authService.alPerderSesion(() => {
 
 async function cerrarLocal(): Promise<void> {
   await UsuarioLocal.guardarSesionActiva(null);
+  await NotificacionService.cancelar().catch(() => undefined);
   useRegistroStore.getState().limpiar();
   useSesionStore.setState({ usuario: null, tags: [] });
 }
+
+// Al guardar el día, el aviso de hoy ya no hace falta (CU-13, flujo A).
+useRegistroStore.subscribe((estado, previo) => {
+  if (estado.registros !== previo.registros && estado.usuarioId) {
+    void useSesionStore.getState().programarRecordatorio();
+  }
+});
 
 function errorDeIngreso(error: unknown): ErrorIngreso {
   if (error instanceof ErrorApi) {
@@ -234,6 +276,8 @@ async function abrirSesion(usuario: Usuario): Promise<void> {
   await UsuarioLocal.guardarSesionActiva(usuario.id);
   await useRegistroStore.getState().cargar(usuario.id);
   useSesionStore.setState({ usuario, tags });
+  // Al abrir la app o entrar en otro teléfono, los avisos quedan al día (sin pedir permiso).
+  void useSesionStore.getState().programarRecordatorio();
 }
 
 /** Tags que se muestran en el formulario de "Hoy" y en Mi cuenta. */

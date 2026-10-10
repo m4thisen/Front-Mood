@@ -9,7 +9,6 @@ import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { useSesionStore } from '@/stores/SesionStore';
 import { RootStackParamList } from '@/navegacion/tipos';
-import { programarRecordatorio } from '@/servicios/NotificacionService';
 import { formatearHora, HORA_RECORDATORIO_POR_DEFECTO, partesHora } from '@/dominio';
 import { localeSelector } from '@/utils/fecha';
 
@@ -27,6 +26,7 @@ export const RecordatorioScreen: React.FC<Props> = ({ navigation }) => {
   const { t, language } = useTranslation();
   const horaGuardada = useSesionStore((s) => s.usuario?.horaRecordatorio);
   const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
+  const programarRecordatorio = useSesionStore((s) => s.programarRecordatorio);
 
   const [hora, setHora] = useState(aFecha(horaGuardada ?? HORA_RECORDATORIO_POR_DEFECTO));
   const [guardando, setGuardando] = useState(false);
@@ -35,7 +35,7 @@ export const RecordatorioScreen: React.FC<Props> = ({ navigation }) => {
     setGuardando(true);
     const texto = formatearHora(hora.getHours(), hora.getMinutes());
     await actualizarPreferencias({ horaRecordatorio: texto });
-    const programado = await programarRecordatorio(texto, t('appName'), t('welcome.description'));
+    const programado = await programarRecordatorio(true);
     setGuardando(false);
     // CU-04 E2: sin permiso la configuración se completa igual, avisando.
     if (!programado) Alert.alert(t('steps.notificationDeniedTitle'), t('steps.notificationDeniedBody'));

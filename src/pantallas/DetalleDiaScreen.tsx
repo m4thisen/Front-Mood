@@ -36,7 +36,7 @@ export const DetalleDiaScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const irAHoy = () => {
     navigation.goBack();
-    navigation.navigate('Principal', { screen: 'Registro' } as never);
+    navigation.navigate('Principal', { screen: 'Registro' });
   };
 
   const valoresTags = registro

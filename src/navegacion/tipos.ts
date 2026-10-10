@@ -1,3 +1,5 @@
+import { NavigatorScreenParams } from '@react-navigation/native';
+
 export type MainTabParamList = {
   Inicio: undefined;
   Estadisticas: undefined;
@@ -13,6 +15,6 @@ export type RootStackParamList = {
   Tags: undefined;
   Recordatorio: undefined;
   ColorDelAlma: undefined;
-  Principal: undefined;
+  Principal: NavigatorScreenParams<MainTabParamList> | undefined;
   DetalleDia: { fecha: string };
 };

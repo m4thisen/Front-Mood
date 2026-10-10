@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, AppState, StyleSheet } from 'react-native';
 import { NavigationContainer, DarkTheme, Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -12,6 +12,8 @@ import { RecordatorioScreen } from '@/pantallas/onboarding/RecordatorioScreen';
 import { ColorDelAlmaScreen } from '@/pantallas/onboarding/ColorDelAlmaScreen';
 import { DetalleDiaScreen } from '@/pantallas/DetalleDiaScreen';
 import { useSesionStore } from '@/stores/SesionStore';
+import { navegacion } from './referencia';
+import { AbrirDesdeRecordatorio, AvisoPermisoRecordatorio } from './RecordatorioDiario';
 import { colors } from '@/tema';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -39,15 +41,20 @@ export const RootNavigator: React.FC = () => {
   const cargando = useSesionStore((s) => s.cargando);
   const usuario = useSesionStore((s) => s.usuario);
   const cargar = useSesionStore((s) => s.cargar);
+  const [navegacionLista, setNavegacionLista] = useState(false);
 
   useEffect(() => {
     cargar();
   }, [cargar]);
 
-  // Al volver a la app, reintenta mandar lo que haya quedado sin conexión.
+  // Al volver a la app: reintenta mandar lo que haya quedado sin conexión y
+  // completa la ventana de avisos del recordatorio.
   useEffect(() => {
     const suscripcion = AppState.addEventListener('change', (estado) => {
-      if (estado === 'active') void useSesionStore.getState().sincronizarPreferencias();
+      if (estado !== 'active') return;
+      const sesion = useSesionStore.getState();
+      void sesion.sincronizarPreferencias();
+      void sesion.programarRecordatorio();
     });
     return () => suscripcion.remove();
   }, []);
@@ -61,7 +68,9 @@ export const RootNavigator: React.FC = () => {
   }
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} ref={navegacion} onReady={() => setNavegacionLista(true)}>
+      <AbrirDesdeRecordatorio navegacionLista={navegacionLista} />
+      <AvisoPermisoRecordatorio />
       <Stack.Navigator
         screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
       >

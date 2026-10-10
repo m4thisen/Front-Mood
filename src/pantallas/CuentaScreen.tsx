@@ -21,7 +21,6 @@ import { useTranslation } from '@/i18n';
 import { useSesionStore, useTagsActivos } from '@/stores/SesionStore';
 import { useIndicadoresProgreso, useListaRegistros } from '@/stores/RegistroStore';
 import { exportarCSV, exportarPDF } from '@/servicios/ExportService';
-import { programarRecordatorio } from '@/servicios/NotificacionService';
 import { BLOQUES, claveTraduccionBloque } from '@/datos/catalogoBloques';
 import {
   calcularEdad,
@@ -53,6 +52,7 @@ export const CuentaScreen: React.FC = () => {
   const tags = useSesionStore((s) => s.tags);
   const tagsActivos = useTagsActivos();
   const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
+  const programarRecordatorio = useSesionStore((s) => s.programarRecordatorio);
   const cerrarSesion = useSesionStore((s) => s.cerrarSesion);
   const registros = useListaRegistros();
   const { diasRegistrados, colorDelAlma } = useIndicadoresProgreso();
@@ -76,7 +76,7 @@ export const CuentaScreen: React.FC = () => {
     const hora = formatearHora(horaBorrador.getHours(), horaBorrador.getMinutes());
     await actualizarPreferencias({ horaRecordatorio: hora });
     setHoja(null);
-    const programado = await programarRecordatorio(hora, t('appName'), t('welcome.description'));
+    const programado = await programarRecordatorio(true);
     if (!programado) Alert.alert(t('steps.notificationDeniedTitle'), t('steps.notificationDeniedBody'));
   };
 

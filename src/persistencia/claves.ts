@@ -6,6 +6,8 @@ const PREFIJO = '@mood/v2';
 
 export const CLAVES = {
   coachmarkHoyVisto: `${PREFIJO}/coachmark-hoy-visto`,
+  /** Si alguna vez se dio el permiso de notificaciones, para avisar si se quita. */
+  recordatorioPermitido: `${PREFIJO}/recordatorio-permitido`,
 } as const;
 
 /**

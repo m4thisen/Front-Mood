@@ -18,7 +18,7 @@ src/
   pantallas/      «frontera»    lo que ve el usuario (Bienvenida, Inicio, Registro, …)
   stores/         «control»     estado y coordinación (SesionStore, RegistroStore) — Zustand
   servicios/      «servicio»    lógica: MotorEstadistico, CalculadoraProgreso, ExportService, …
-  persistencia/   «persistencia» base local del dispositivo (fuente de verdad)
+  persistencia/   «persistencia» base local SQLite del dispositivo (fuente de verdad)
   api/            comunicación con el servidor (ApiClient); IA y música todavía simuladas
   dominio/        entidades y reglas de negocio (RegistroDiario, Usuario, …)
   componentes/    piezas visuales reutilizables
@@ -32,6 +32,14 @@ src/
 - La sesión se abre contra el servidor, pero la app no lo necesita para
   arrancar: abre con lo guardado en el dispositivo. Los tokens viven en el
   llavero del sistema (`AlmacenSeguro`), nunca en AsyncStorage.
+- Los registros, el perfil, las preferencias y los tags viven en una base
+  **SQLite** local (`persistencia/baseLocal.ts`). Su esquema se versiona con
+  migraciones y repite las reglas del dominio con restricciones (un registro
+  por fecha, ánimo de 1 a 5, rangos de sueño y ejercicio). Todo esto
+  funciona sin conexión: la app cumple su función principal sin el servidor.
+- El recordatorio diario es una notificación **local**: se programan los
+  avisos de los próximos 14 días a la hora elegida, salteando los días ya
+  registrados. Tocar el aviso abre el formulario del día.
 - El perfil, las preferencias y los tags se guardan primero en el
   dispositivo y después se mandan al servidor. Sin conexión quedan
   pendientes y se reintentan al abrir la app, al volver a ella y antes de
@@ -122,7 +130,7 @@ entrega por si aparece la versión corregida.
 | Comando | Qué hace |
 |---|---|
 | `npm run typecheck` | Verifica los tipos de TypeScript (modo estricto) |
-| `npm test` | Corre las pruebas unitarias (Jest) |
+| `npm test` | Corre las pruebas (Jest). Las de la base local usan SQLite real (sql.js) |
 | `npm run ios` | Compila e instala la app en iOS |
 
 ## Estado
@@ -136,13 +144,15 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
   segura que se mantiene entre usos y se renueva sola, onboarding, Mi cuenta
   y tags guardados en el servidor (también si se cambian sin conexión).
   Pendiente: la prueba en un iPhone físico.
-- [ ] Iteración 2 — Registro diario (SQLite, recordatorio)
+- [x] **Iteración 2 — Registro diario**: base local SQLite, formulario del
+  día con sus validaciones y la regla de medianoche, edición solo del día en
+  curso y recordatorio local que no molesta si ya registraste.
+  Pendiente: la prueba en un iPhone físico.
 - [ ] Iteración 3 — Sincronización
 - [ ] Iteración 4 — Visualización y análisis
 - [ ] Iteración 5 — Música e IA
 - [ ] Iteración 6 — Portabilidad y terminación
 
-La IA y la música todavía se simulan dentro de la app. Los datos se guardan
-provisoriamente en AsyncStorage y pasan a SQLite en la iteración 2. Al entrar
-en un teléfono nuevo todavía no se baja el historial de registros: llega con
-la sincronización (iteración 3).
+La IA y la música todavía se simulan dentro de la app. Los registros quedan
+pendientes en el teléfono hasta la sincronización (iteración 3); por eso, al
+entrar en un teléfono nuevo, todavía no se baja el historial.

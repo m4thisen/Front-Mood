@@ -36,7 +36,8 @@ src/
   dispositivo y después se mandan al servidor. Sin conexión quedan
   pendientes y se reintentan al abrir la app, al volver a ella y antes de
   cerrar sesión (`PreferenciasPendientes`).
-- Todos los textos están en español e inglés (`src/i18n`).
+- Los textos de la iteración 0 están en español e inglés (`src/i18n`); los
+  nuevos se escriben directamente en español.
 
 ## Diseño
 
@@ -107,12 +108,18 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
 - [x] **Iteración 0 — Base del proyecto**: Expo SDK 57, estructura por capas,
   entidades, stores, navegación, i18n, Jest y rediseño visual de todas las
   pantallas.
-- [ ] Iteración 1 — Acceso y configuración (login con Google, sesiones)
+- [x] **Iteración 1 — Acceso y configuración**: entrar con Google, sesión
+  segura que se mantiene entre usos y se renueva sola, onboarding, Mi cuenta
+  y tags guardados en el servidor (también si se cambian sin conexión).
+  Pendiente: Google en Android (necesita la huella SHA-1 de la firma) y la
+  prueba en un iPhone físico.
 - [ ] Iteración 2 — Registro diario (SQLite, recordatorio)
 - [ ] Iteración 3 — Sincronización
 - [ ] Iteración 4 — Visualización y análisis
 - [ ] Iteración 5 — Música e IA
 - [ ] Iteración 6 — Portabilidad y terminación
 
-La IA y la música todavía se simulan dentro de la app. Los datos se guardan provisoriamente en AsyncStorage y
-pasan a SQLite en la iteración 2.
+La IA y la música todavía se simulan dentro de la app. Los datos se guardan
+provisoriamente en AsyncStorage y pasan a SQLite en la iteración 2. Al entrar
+en un teléfono nuevo todavía no se baja el historial de registros: llega con
+la sincronización (iteración 3).

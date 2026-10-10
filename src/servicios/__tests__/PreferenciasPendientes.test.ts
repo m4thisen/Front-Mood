@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ApiClient } from '@/api/ApiClient';
 import { TagPersonalizado, Usuario } from '@/dominio';
 import type { Pendientes } from '@/persistencia/UsuarioLocalRepository';
@@ -107,12 +107,15 @@ describe('PreferenciasPendientes · perfil (CU-04 a CU-07)', () => {
   });
 
   it('si el servidor lo rechaza, se descarta: reintentar daría lo mismo', async () => {
+    const aviso = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     servidor.fallas.set('PATCH /usuarios/me', { estado: 400, error: 'DATOS_INVALIDOS' });
     await cambiarPerfil({ nombre: 'Lucía' });
 
     await preferencias.enviar(ID);
 
     expect(await preferencias.perfilPendiente(ID)).toBe(false);
+    expect(aviso).toHaveBeenCalled();
+    aviso.mockRestore();
   });
 
   it('un error del servidor (5xx) deja el cambio pendiente', async () => {
@@ -156,6 +159,19 @@ describe('PreferenciasPendientes · tags (CU-08)', () => {
     await preferencias.enviar(ID);
 
     expect(servidor.tags.get('tag-1')).toMatchObject({ activo: false });
+  });
+
+  it('cambiarle el nombre a un tag que ya estaba en el servidor (RF-08)', async () => {
+    telefono.tags = [guitarra];
+    await preferencias.marcarTag(ID, guitarra.id);
+    await preferencias.enviar(ID);
+
+    telefono.tags = [{ ...guitarra, nombre: 'Práctica de guitarra' }];
+    await preferencias.marcarTag(ID, guitarra.id);
+    await preferencias.enviar(ID);
+
+    expect(servidor.tags.get('tag-1')).toMatchObject({ nombre: 'Práctica de guitarra', tipo: 'SI_NO', activo: true });
+    expect(servidor.tags.size).toBe(1);
   });
 
   it('reenviar un tag que ya estaba no lo duplica', async () => {

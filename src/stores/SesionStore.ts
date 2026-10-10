@@ -41,6 +41,8 @@ interface EstadoSesion {
   actualizarPreferencias: (cambios: CambiosPreferencias) => Promise<void>;
   completarOnboarding: () => Promise<void>;
   crearTag: (nombre: string, tipo: TipoTag) => Promise<ErrorTag | null>;
+  /** El tipo no se cambia: rompería los valores ya cargados. */
+  renombrarTag: (id: string, nombre: string) => Promise<ErrorTag | null>;
   /** Eliminar un tag lo desactiva: sus valores históricos se conservan. */
   desactivarTag: (id: string) => Promise<void>;
   cerrarSesion: () => Promise<void>;
@@ -119,6 +121,21 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
     await UsuarioLocal.guardarTags(usuario.id, nuevos);
     set({ tags: nuevos });
     await paraElServidor(usuario.id, (usuarioId) => preferencias.marcarTag(usuarioId, tag.id));
+    return null;
+  },
+
+  renombrarTag: async (id, nombre) => {
+    const { usuario, tags } = get();
+    if (!usuario) return null;
+    const error = validarNombreTag(nombre, tags, id);
+    if (error) return error;
+
+    const limpio = nombre.trim();
+    if (tags.find((t) => t.id === id)?.nombre === limpio) return null;
+    const nuevos = tags.map((t) => (t.id === id ? { ...t, nombre: limpio } : t));
+    await UsuarioLocal.guardarTags(usuario.id, nuevos);
+    set({ tags: nuevos });
+    await paraElServidor(usuario.id, (usuarioId) => preferencias.marcarTag(usuarioId, id));
     return null;
   },
 

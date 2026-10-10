@@ -26,9 +26,21 @@ export function respuesta(estado: number, cuerpo?: unknown): Response {
   } as Response;
 }
 
+interface TagGuardado {
+  id: string;
+  nombre: string;
+  tipo: string;
+  activo: boolean;
+}
+
 export class ServidorFalso {
   readonly pedidos: PedidoRecibido[] = [];
   sinConexion = false;
+  /** Último perfil recibido por PATCH /usuarios/me. */
+  perfil: Record<string, unknown> = {};
+  readonly tags = new Map<string, TagGuardado>();
+  /** Respuestas de error forzadas, por "MÉTODO /ruta". */
+  readonly fallas = new Map<string, { estado: number; error: string }>();
   /** Se pone en true si alguna vez llegó un token de refresco ya usado. */
   reusoDetectado = false;
 
@@ -37,6 +49,7 @@ export class ServidorFalso {
   private readonly accesosValidos = new Set<string>();
   private emitidos = 0;
   private frenoRenovacion: Promise<void> | null = null;
+  private frenoPedidos: Promise<void> | null = null;
 
   /** Los tokens de acceso emitidos hasta ahora dejan de servir. */
   vencerAccesos(): void {
@@ -63,6 +76,23 @@ export class ServidorFalso {
       };
     });
     return soltar;
+  }
+
+  /** Deja colgados los pedidos con sesión hasta llamar a la función que devuelve. */
+  frenarPedidos(): () => void {
+    let soltar = () => {};
+    this.frenoPedidos = new Promise((resolver) => {
+      soltar = () => {
+        this.frenoPedidos = null;
+        resolver();
+      };
+    });
+    return soltar;
+  }
+
+  /** Abre una sesión sin pasar por /auth/google y devuelve su token de acceso. */
+  abrirSesion(): { accessToken: string; refreshToken: string } {
+    return this.emitir();
   }
 
   pedidosA(ruta: string): PedidoRecibido[] {
@@ -106,10 +136,49 @@ export class ServidorFalso {
       default: {
         const token = autorizacion?.replace('Bearer ', '');
         if (!token || !this.accesosValidos.has(token)) return respuesta(401, { error: 'TOKEN_VENCIDO' });
-        return respuesta(200, { ruta });
+        if (this.frenoPedidos) await this.frenoPedidos;
+        const metodo = init.method ?? 'GET';
+        const falla = this.fallas.get(`${metodo} ${ruta}`);
+        if (falla) return respuesta(falla.estado, { error: falla.error });
+        return this.conSesion(metodo, ruta, cuerpo ?? {});
       }
     }
   };
+
+  /** Perfil y tags, con las mismas reglas que el servidor real. */
+  private conSesion(metodo: string, ruta: string, cuerpo: Record<string, unknown>): Response {
+    if (metodo === 'PATCH' && ruta === '/usuarios/me') {
+      this.perfil = { ...this.perfil, ...cuerpo };
+      return respuesta(200, this.perfil);
+    }
+    if (metodo === 'POST' && ruta === '/tags') {
+      const id = String(cuerpo.id);
+      const existente = this.tags.get(id);
+      if (existente) return respuesta(201, existente);
+      if (this.nombreOcupado(String(cuerpo.nombre))) return respuesta(409, { error: 'NOMBRE_REPETIDO' });
+      const tag = { id, nombre: String(cuerpo.nombre), tipo: String(cuerpo.tipo), activo: true };
+      this.tags.set(id, tag);
+      return respuesta(201, tag);
+    }
+    const editar = /^\/tags\/(.+)$/.exec(ruta);
+    if (metodo === 'PATCH' && editar) {
+      const tag = this.tags.get(editar[1]);
+      if (!tag) return respuesta(404, { error: 'NO_ENCONTRADO' });
+      const actualizado = { ...tag, ...cuerpo } as TagGuardado;
+      if (actualizado.activo && this.nombreOcupado(actualizado.nombre, tag.id)) {
+        return respuesta(409, { error: 'NOMBRE_REPETIDO' });
+      }
+      this.tags.set(tag.id, actualizado);
+      return respuesta(200, actualizado);
+    }
+    return respuesta(200, { ruta });
+  }
+
+  private nombreOcupado(nombre: string, salvoId?: string): boolean {
+    return [...this.tags.values()].some(
+      (t) => t.activo && t.id !== salvoId && t.nombre.toLowerCase() === nombre.toLowerCase()
+    );
+  }
 
   private emitir() {
     this.emitidos += 1;

@@ -27,6 +27,38 @@ export interface TagApi {
   activo: boolean;
 }
 
+/** Cuerpo de PATCH /usuarios/me. */
+export interface CambiosPerfilApi {
+  nombre?: string;
+  fechaNacimiento?: string;
+  genero: Genero;
+  idioma: Idioma;
+  horaRecordatorio: string;
+  frecuenciaIa: FrecuenciaIA;
+  zonaHoraria: string;
+  bloques: string[];
+  onboardingCompleto?: true;
+}
+
+/**
+ * El perfil completo tal como está en el dispositivo. Lo que todavía no se
+ * completó no se manda: el servidor no acepta un nombre vacío, y el
+ * onboarding solo se puede marcar como completo, nunca desmarcar.
+ */
+export function aCambiosPerfil(usuario: Usuario): CambiosPerfilApi {
+  return {
+    ...(usuario.nombre.trim() ? { nombre: usuario.nombre.trim() } : {}),
+    ...(usuario.fechaNacimiento ? { fechaNacimiento: usuario.fechaNacimiento } : {}),
+    genero: usuario.genero,
+    idioma: usuario.idioma,
+    horaRecordatorio: usuario.horaRecordatorio,
+    frecuenciaIa: usuario.frecuenciaIA,
+    zonaHoraria: usuario.zonaHoraria,
+    bloques: usuario.bloquesActivos,
+    ...(usuario.onboardingCompleto ? { onboardingCompleto: true as const } : {}),
+  };
+}
+
 /** Lo que todavía no se completó en el onboarding llega vacío del servidor. */
 export function aUsuario(perfil: PerfilApi): Usuario {
   return {

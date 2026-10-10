@@ -12,7 +12,7 @@ import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { useSesionStore } from '@/stores/SesionStore';
 import { RootStackParamList } from '@/navegacion/tipos';
-import { calcularEdad, Genero, GENEROS } from '@/dominio';
+import { calcularEdad, Genero, GENEROS, LARGO_MAXIMO_NOMBRE } from '@/dominio';
 import { dateLocale, localeSelector, toISODate } from '@/utils/fecha';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DatosBasicos'>;
@@ -58,6 +58,7 @@ export const DatosBasicosScreen: React.FC<Props> = ({ navigation }) => {
         onChangeText={setNombre}
         placeholder={t('register.namePlaceholder')}
         placeholderTextColor={colors.textTertiary}
+        maxLength={LARGO_MAXIMO_NOMBRE}
         style={[typography.bodyMedium, styles.campo]}
         autoCapitalize="words"
         returnKeyType="done"

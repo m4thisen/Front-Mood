@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, AppState, StyleSheet } from 'react-native';
 import { NavigationContainer, DarkTheme, Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './tipos';
@@ -43,6 +43,14 @@ export const RootNavigator: React.FC = () => {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  // Al volver a la app, reintenta mandar lo que haya quedado sin conexión.
+  useEffect(() => {
+    const suscripcion = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') void useSesionStore.getState().sincronizarPreferencias();
+    });
+    return () => suscripcion.remove();
+  }, []);
 
   if (cargando) {
     return (

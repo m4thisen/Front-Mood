@@ -8,6 +8,7 @@ export const CLAVES = {
   sesionActiva: `${PREFIJO}/sesion-activa`,
   usuario: (usuarioId: string) => `${PREFIJO}/usuarios/${usuarioId}/perfil`,
   tags: (usuarioId: string) => `${PREFIJO}/usuarios/${usuarioId}/tags`,
+  pendientes: (usuarioId: string) => `${PREFIJO}/usuarios/${usuarioId}/pendientes`,
   registros: (usuarioId: string) => `${PREFIJO}/usuarios/${usuarioId}/registros`,
   coachmarkHoyVisto: `${PREFIJO}/coachmark-hoy-visto`,
 } as const;

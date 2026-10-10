@@ -32,6 +32,10 @@ src/
 - La sesión se abre contra el servidor, pero la app no lo necesita para
   arrancar: abre con lo guardado en el dispositivo. Los tokens viven en el
   llavero del sistema (`AlmacenSeguro`), nunca en AsyncStorage.
+- El perfil, las preferencias y los tags se guardan primero en el
+  dispositivo y después se mandan al servidor. Sin conexión quedan
+  pendientes y se reintentan al abrir la app, al volver a ella y antes de
+  cerrar sesión (`PreferenciasPendientes`).
 - Todos los textos están en español e inglés (`src/i18n`).
 
 ## Diseño

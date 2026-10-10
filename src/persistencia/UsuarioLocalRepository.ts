@@ -36,6 +36,26 @@ export async function guardarTags(usuarioId: string, tags: TagPersonalizado[]): 
   await AsyncStorage.setItem(CLAVES.tags(usuarioId), JSON.stringify(tags));
 }
 
+/**
+ * Cambios guardados en el dispositivo que todavía no llegaron al servidor.
+ * Cada uno lleva un número de versión que sube con cada cambio, para no dar
+ * por enviado algo que cambió mientras se mandaba la versión anterior.
+ */
+export interface Pendientes {
+  /** Versión del perfil sin enviar; 0 si no hay nada pendiente. */
+  perfil: number;
+  /** Versión de cada tag sin enviar, por id. */
+  tags: Record<string, number>;
+}
+
+export async function obtenerPendientes(usuarioId: string): Promise<Pendientes> {
+  return (await leerJson<Pendientes>(CLAVES.pendientes(usuarioId))) ?? { perfil: 0, tags: {} };
+}
+
+export async function guardarPendientes(usuarioId: string, pendientes: Pendientes): Promise<void> {
+  await AsyncStorage.setItem(CLAVES.pendientes(usuarioId), JSON.stringify(pendientes));
+}
+
 async function leerJson<T>(clave: string): Promise<T | null> {
   const crudo = await AsyncStorage.getItem(clave);
   return crudo ? (JSON.parse(crudo) as T) : null;

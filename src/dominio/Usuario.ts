@@ -21,6 +21,9 @@ export interface Usuario {
 
 export const HORA_RECORDATORIO_POR_DEFECTO = '21:00';
 
+/** Igual que VARCHAR(80) en la base. */
+export const LARGO_MAXIMO_NOMBRE = 80;
+
 export function calcularEdad(fechaNacimiento: string, hoy: Date = new Date()): number {
   return differenceInYears(hoy, parseISO(fechaNacimiento));
 }

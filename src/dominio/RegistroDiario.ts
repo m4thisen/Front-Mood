@@ -50,6 +50,9 @@ export type ErrorValidacion =
   | 'HORAS_SUENO_FUERA_DE_RANGO'
   | 'MINUTOS_EJERCICIO_FUERA_DE_RANGO';
 
+/** Por qué no se pudo guardar: datos inválidos o un día que ya terminó (RN-03). */
+export type ErrorGuardado = ErrorValidacion | 'DIA_TERMINADO';
+
 /** RN-03: solo se puede crear y editar el registro del día actual. */
 export function esEditable(registro: Pick<RegistroDiario, 'fecha'>, hoy: string): boolean {
   return registro.fecha === hoy;

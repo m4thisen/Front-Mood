@@ -18,6 +18,8 @@ interface Props {
   icono: NombreIcono;
   /** Texto que se muestra mientras no hay valor. */
   vacio: string;
+  /** Se marca cuando el valor no pasó la validación (CU-09, E2). */
+  invalido?: boolean;
 }
 
 const formatear = (valor: number) => (Number.isInteger(valor) ? String(valor) : valor.toFixed(1).replace('.', ','));
@@ -38,6 +40,7 @@ export const SelectorNumerico: React.FC<Props> = ({
   titulo,
   icono,
   vacio,
+  invalido = false,
 }) => {
   const cambiar = (direccion: 1 | -1) => {
     hapticos.seleccion();
@@ -47,7 +50,7 @@ export const SelectorNumerico: React.FC<Props> = ({
   };
 
   return (
-    <View style={styles.contenedor}>
+    <View style={[styles.contenedor, invalido && styles.invalido]}>
       <View style={styles.cabecera}>
         <Icono nombre={icono} tamano={15} color={colors.textTertiary} />
         <Text style={[typography.footnote, styles.titulo]}>{titulo}</Text>
@@ -97,6 +100,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
     padding: spacing.md,
+  },
+  invalido: {
+    borderWidth: 1,
+    borderColor: colors.danger,
   },
   cabecera: {
     flexDirection: 'row',

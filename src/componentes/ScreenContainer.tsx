@@ -11,6 +11,8 @@ interface Props {
   contentStyle?: StyleProp<ViewStyle>;
   /** Contenido fijo abajo (por ejemplo, el botón de guardar), fuera del scroll. */
   pie?: React.ReactNode;
+  /** Para mover el scroll desde la pantalla (por ejemplo, volver arriba). */
+  refScroll?: React.Ref<ScrollView>;
 }
 
 /**
@@ -27,12 +29,13 @@ const BackgroundGradient: React.FC = () => (
   />
 );
 
-export const ScreenContainer: React.FC<Props> = ({ children, scroll = false, style, contentStyle, pie }) => {
+export const ScreenContainer: React.FC<Props> = ({ children, scroll = false, style, contentStyle, pie, refScroll }) => {
   if (scroll) {
     return (
       <SafeAreaView style={[styles.safe, style]} edges={['top', 'left', 'right']}>
         <BackgroundGradient />
         <ScrollView
+          ref={refScroll}
           contentContainerStyle={[styles.content, contentStyle]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

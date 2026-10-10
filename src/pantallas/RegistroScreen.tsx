@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, AppState, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { EncabezadoPantalla, EncabezadoSeccion } from '@/componentes/Encabezados';
 import { EscalaAnimo } from '@/componentes/EscalaAnimo';
@@ -16,18 +16,21 @@ import { iconoDeBloque, ICONOS_CLIMA } from '@/componentes/iconosDominio';
 import { colors, radius, spacing, typography } from '@/tema';
 import { useTranslation } from '@/i18n';
 import { useSesionStore, useTagsActivos } from '@/stores/SesionStore';
-import { useIndicadoresProgreso, useRegistroDeHoy, useRegistroStore } from '@/stores/RegistroStore';
+import { useIndicadoresProgreso, useRegistroStore } from '@/stores/RegistroStore';
 import { bloquesActivos, claveTraduccionBloque, claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
 import {
   Clima,
   CLIMAS,
   DatosRegistro,
+  ErrorGuardado,
   ErrorValidacion,
   NivelAnimo,
   RANGO_HORAS_SUENO,
   RANGO_MINUTOS_EJERCICIO,
+  RegistroDiario,
 } from '@/dominio';
-import { dateLocale } from '@/utils/fecha';
+import { dateLocale, todayISO } from '@/utils/fecha';
+import { hapticos } from '@/utils/hapticos';
 
 const MENSAJES_ERROR: Partial<Record<ErrorValidacion, string>> = {
   HORAS_SUENO_FUERA_DE_RANGO: 'today.errorSleepRange',
@@ -39,6 +42,9 @@ const MENSAJES_ERROR: Partial<Record<ErrorValidacion, string>> = {
  * en menos de un minuto: el ánimo es lo único obligatorio, lo que se marca
  * con un toque va primero y lo que hay que escribir va al final. El botón de
  * guardar queda siempre a mano, arriba de la barra.
+ *
+ * El formulario queda atado al día en que se abrió: si pasa la medianoche,
+ * ese día ya no se puede guardar (RN-03) y el formulario pasa al día nuevo.
  */
 export const RegistroScreen: React.FC = () => {
   const { t, language } = useTranslation();
@@ -46,27 +52,70 @@ export const RegistroScreen: React.FC = () => {
   const altoBarra = useAltoBarraInferior();
   const usuario = useSesionStore((s) => s.usuario);
   const tagsActivos = useTagsActivos();
-  const registroDeHoy = useRegistroDeHoy();
   const guardar = useRegistroStore((s) => s.guardar);
   const { rachaActual } = useIndicadoresProgreso();
+  const refScroll = useRef<ScrollView>(null);
 
   const bloques = useMemo(() => bloquesActivos(usuario?.bloquesActivos ?? []), [usuario]);
 
-  const [nivelAnimo, setNivelAnimo] = useState<NivelAnimo | null>(registroDeHoy?.nivelAnimo ?? null);
-  const [destacado, setDestacado] = useState(registroDeHoy?.destacado ?? false);
-  const [texto, setTexto] = useState(registroDeHoy?.texto ?? '');
-  const [etiquetas, setEtiquetas] = useState<Set<string>>(new Set(registroDeHoy?.etiquetas ?? []));
-  const [valoresTags, setValoresTags] = useState<Record<string, boolean | string>>(
-    registroDeHoy?.valoresTags ?? {}
-  );
-  const [climas, setClimas] = useState<Set<Clima>>(new Set(registroDeHoy?.climas ?? []));
-  const [horasSueno, setHorasSueno] = useState<number | null>(registroDeHoy?.horasSueno ?? null);
-  const [minutosEjercicio, setMinutosEjercicio] = useState<number | null>(
-    registroDeHoy?.minutosEjercicio ?? null
-  );
-  const [cancion, setCancion] = useState(registroDeHoy?.cancion?.titulo ?? '');
+  const [fecha, setFecha] = useState(todayISO);
+  const registroDelDia = useRegistroStore((s) => s.registros[fecha] ?? null);
+  const inicial = useRegistroStore.getState().registros[fecha] ?? null;
+
+  const [nivelAnimo, setNivelAnimo] = useState<NivelAnimo | null>(inicial?.nivelAnimo ?? null);
+  const [destacado, setDestacado] = useState(inicial?.destacado ?? false);
+  const [texto, setTexto] = useState(inicial?.texto ?? '');
+  const [etiquetas, setEtiquetas] = useState<Set<string>>(new Set(inicial?.etiquetas ?? []));
+  const [valoresTags, setValoresTags] = useState<Record<string, boolean | string>>(inicial?.valoresTags ?? {});
+  const [climas, setClimas] = useState<Set<Clima>>(new Set(inicial?.climas ?? []));
+  const [horasSueno, setHorasSueno] = useState<number | null>(inicial?.horasSueno ?? null);
+  const [minutosEjercicio, setMinutosEjercicio] = useState<number | null>(inicial?.minutosEjercicio ?? null);
+  const [cancion, setCancion] = useState(inicial?.cancion?.titulo ?? '');
   const [guardando, setGuardando] = useState(false);
   const [celebrando, setCelebrando] = useState(false);
+  const [errores, setErrores] = useState<Set<ErrorValidacion>>(new Set());
+
+  const rellenar = useCallback((registro: RegistroDiario | null) => {
+    setNivelAnimo(registro?.nivelAnimo ?? null);
+    setDestacado(registro?.destacado ?? false);
+    setTexto(registro?.texto ?? '');
+    setEtiquetas(new Set(registro?.etiquetas ?? []));
+    setValoresTags(registro?.valoresTags ?? {});
+    setClimas(new Set(registro?.climas ?? []));
+    setHorasSueno(registro?.horasSueno ?? null);
+    setMinutosEjercicio(registro?.minutosEjercicio ?? null);
+    setCancion(registro?.cancion?.titulo ?? '');
+    setErrores(new Set());
+  }, []);
+
+  /** Pasó la medianoche: el formulario pasa a ser el del día nuevo. */
+  const seguirConHoy = useCallback(() => {
+    const hoy = todayISO();
+    if (hoy === fecha) return;
+    setFecha(hoy);
+    rellenar(useRegistroStore.getState().registros[hoy] ?? null);
+  }, [fecha, rellenar]);
+
+  useFocusEffect(seguirConHoy);
+  useEffect(() => {
+    const suscripcion = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') seguirConHoy();
+    });
+    return () => suscripcion.remove();
+  }, [seguirConHoy]);
+
+  const quitarError = (error: ErrorValidacion) =>
+    setErrores((previos) => {
+      if (!previos.has(error)) return previos;
+      const siguientes = new Set(previos);
+      siguientes.delete(error);
+      return siguientes;
+    });
+
+  const elegirAnimo = (nivel: NivelAnimo) => {
+    setNivelAnimo(nivel);
+    quitarError('ANIMO_REQUERIDO');
+  };
 
   const alternar = <T,>(set: React.Dispatch<React.SetStateAction<Set<T>>>, valor: T) =>
     set((previo) => {
@@ -77,6 +126,14 @@ export const RegistroScreen: React.FC = () => {
     });
 
   const handleGuardar = async () => {
+    // CU-09, E1: sin ánimo no se guarda; se resalta la escala, que está arriba.
+    if (!nivelAnimo) {
+      setErrores(new Set<ErrorValidacion>(['ANIMO_REQUERIDO']));
+      hapticos.error();
+      refScroll.current?.scrollTo({ y: 0, animated: true });
+      return;
+    }
+
     const datos: DatosRegistro = {
       nivelAnimo,
       destacado,
@@ -94,12 +151,39 @@ export const RegistroScreen: React.FC = () => {
     };
 
     setGuardando(true);
-    const errores = await guardar(datos);
+    let resultado: ErrorGuardado[];
+    try {
+      resultado = await guardar(datos, fecha);
+    } catch {
+      // CU-09, E3: no se pudo escribir en el teléfono (por ejemplo, sin espacio).
+      setGuardando(false);
+      hapticos.error();
+      Alert.alert(
+        'No se pudo guardar',
+        'Hubo un problema al guardar en el teléfono, por ejemplo falta de espacio. Lo que cargaste sigue en pantalla.',
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: 'Reintentar', onPress: () => void handleGuardar() },
+        ]
+      );
+      return;
+    }
     setGuardando(false);
 
-    if (errores.length > 0) {
-      const mensaje = errores.map((e) => MENSAJES_ERROR[e]).find(Boolean);
-      if (mensaje) Alert.alert(t('today.errorTitle'), t(mensaje));
+    if (resultado.includes('DIA_TERMINADO')) {
+      hapticos.error();
+      Alert.alert(
+        'Ese día ya terminó',
+        'Pasó la medianoche y los días anteriores no se pueden modificar. El formulario ahora es para hoy.'
+      );
+      setFecha(todayISO());
+      rellenar(useRegistroStore.getState().registros[todayISO()] ?? null);
+      return;
+    }
+    if (resultado.length > 0) {
+      // CU-09, E2: se marca el campo con el valor inválido.
+      setErrores(new Set(resultado as ErrorValidacion[]));
+      hapticos.error();
       return;
     }
     setCelebrando(true);
@@ -110,7 +194,8 @@ export const RegistroScreen: React.FC = () => {
     navigation.navigate('Inicio');
   };
 
-  const fechaHoy = format(new Date(), "EEEE d 'de' MMMM", { locale: dateLocale(language) });
+  const fechaTitulo = format(parseISO(fecha), "EEEE d 'de' MMMM", { locale: dateLocale(language) });
+  const mensajeRango = [...errores].map((e) => MENSAJES_ERROR[e]).find(Boolean);
 
   const pie = (
     <View style={[styles.pie, { bottom: altoBarra }]} pointerEvents="box-none">
@@ -121,21 +206,30 @@ export const RegistroScreen: React.FC = () => {
         pointerEvents="none"
       />
       <Boton
-        titulo={registroDeHoy ? t('today.saveChanges') : t('today.saveEntry')}
+        titulo={registroDelDia ? t('today.saveChanges') : t('today.saveEntry')}
         onPress={handleGuardar}
-        deshabilitado={!nivelAnimo}
         cargando={guardando}
       />
     </View>
   );
 
   return (
-    <ScreenContainer scroll contentStyle={[styles.content, { paddingBottom: altoBarra + 110 }]} pie={pie}>
-      <EncabezadoPantalla antetitulo={fechaHoy} titulo={t('today.title')} />
+    <ScreenContainer
+      scroll
+      refScroll={refScroll}
+      contentStyle={[styles.content, { paddingBottom: altoBarra + 110 }]}
+      pie={pie}
+    >
+      <EncabezadoPantalla antetitulo={fechaTitulo} titulo={t('today.title')} />
 
-      <View style={styles.tarjetaAnimo}>
+      <View style={[styles.tarjetaAnimo, errores.has('ANIMO_REQUERIDO') && styles.tarjetaFaltaAnimo]}>
         <Text style={[typography.headline, styles.pregunta]}>{t('today.moodQuestion')}</Text>
-        <EscalaAnimo valor={nivelAnimo} onCambio={setNivelAnimo} />
+        <EscalaAnimo valor={nivelAnimo} onCambio={elegirAnimo} />
+        {errores.has('ANIMO_REQUERIDO') && (
+          <Text style={[typography.footnote, styles.faltaAnimo]} accessibilityLiveRegion="polite">
+            Elegí cómo estuvo tu día: es lo único obligatorio.
+          </Text>
+        )}
         <Pressable
           onPress={() => setDestacado((d) => !d)}
           accessibilityRole="switch"
@@ -147,7 +241,7 @@ export const RegistroScreen: React.FC = () => {
             {destacado ? t('today.favoriteToggleOn') : t('today.favoriteToggle')}
           </Text>
         </Pressable>
-        {registroDeHoy && (
+        {registroDelDia && (
           <Text style={[typography.footnote, styles.yaRegistrado]}>{t('today.alreadyLogged')}</Text>
         )}
       </View>
@@ -193,7 +287,11 @@ export const RegistroScreen: React.FC = () => {
           titulo={t('today.sleepShort')}
           icono="sueno"
           valor={horasSueno}
-          onCambio={setHorasSueno}
+          onCambio={(valor) => {
+            setHorasSueno(valor);
+            quitarError('HORAS_SUENO_FUERA_DE_RANGO');
+          }}
+          invalido={errores.has('HORAS_SUENO_FUERA_DE_RANGO')}
           paso={0.5}
           inicial={7}
           min={RANGO_HORAS_SUENO.min}
@@ -205,7 +303,11 @@ export const RegistroScreen: React.FC = () => {
           titulo={t('today.exerciseShort')}
           icono="ejercicio"
           valor={minutosEjercicio}
-          onCambio={setMinutosEjercicio}
+          onCambio={(valor) => {
+            setMinutosEjercicio(valor);
+            quitarError('MINUTOS_EJERCICIO_FUERA_DE_RANGO');
+          }}
+          invalido={errores.has('MINUTOS_EJERCICIO_FUERA_DE_RANGO')}
           paso={15}
           inicial={30}
           min={RANGO_MINUTOS_EJERCICIO.min}
@@ -214,6 +316,7 @@ export const RegistroScreen: React.FC = () => {
           vacio={t('common.optional')}
         />
       </View>
+      {mensajeRango && <Text style={[typography.footnote, styles.errorCampo]}>{t(mensajeRango)}</Text>}
       <View style={styles.campo}>
         <Icono nombre="cancion" tamano={16} color={colors.textTertiary} />
         <TextInput
@@ -295,6 +398,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
+  },
+  tarjetaFaltaAnimo: {
+    borderWidth: 1,
+    borderColor: colors.danger,
+  },
+  faltaAnimo: {
+    color: colors.danger,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  errorCampo: {
+    color: colors.danger,
+    marginTop: spacing.sm,
   },
   pregunta: {
     color: colors.textPrimary,

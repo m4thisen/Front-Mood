@@ -6,7 +6,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import * as Crypto from 'expo-crypto';
-import { DatosRegistro, ErrorValidacion, NivelAnimo, RegistroDiario, validar } from '@/dominio';
+import { DatosRegistro, ErrorGuardado, esEditable, NivelAnimo, RegistroDiario, validar } from '@/dominio';
 import * as RegistroLocal from '@/persistencia/RegistroLocalRepository';
 import { colorDelAlma, diasRegistrados, rachaActual, rachaMaxima } from '@/servicios/CalculadoraProgreso';
 import { todayISO } from '@/utils/fecha';
@@ -16,10 +16,14 @@ interface EstadoRegistros {
   /** Registros indexados por fecha (yyyy-mm-dd). */
   registros: Record<string, RegistroDiario>;
   cargar: (usuarioId: string) => Promise<void>;
-  /** Guarda el registro de hoy. Si ya existe, lo edita (CU-09, flujo B). */
-  guardar: (datos: DatosRegistro) => Promise<ErrorValidacion[]>;
+  /**
+   * Guarda el registro del día para el que se abrió el formulario (por
+   * defecto, hoy). Si ya existe, lo edita (CU-09, flujo B). Si ese día ya
+   * terminó, no guarda nada (RN-03). Si falla la base local, lanza el error.
+   */
+  guardar: (datos: DatosRegistro, fecha?: string) => Promise<ErrorGuardado[]>;
   /** Edita el registro de hoy. Los días anteriores son de solo lectura (RN-03). */
-  editarHoy: (datos: DatosRegistro) => Promise<ErrorValidacion[]>;
+  editarHoy: (datos: DatosRegistro) => Promise<ErrorGuardado[]>;
   obtenerMes: (anio: number, mes: number) => RegistroDiario[];
   limpiar: () => void;
 }
@@ -33,8 +37,10 @@ export const useRegistroStore = create<EstadoRegistros>((set, get) => ({
     set({ usuarioId, registros: Object.fromEntries(lista.map((r) => [r.fecha, r])) });
   },
 
-  guardar: async (datos) => {
+  guardar: async (datos, fecha = todayISO()) => {
     const hoy = todayISO();
+    // El formulario se abrió antes de medianoche y se guarda después.
+    if (!esEditable({ fecha }, hoy)) return ['DIA_TERMINADO'];
     if (get().registros[hoy]) return get().editarHoy(datos);
 
     const { usuarioId } = get();
@@ -48,6 +54,7 @@ export const useRegistroStore = create<EstadoRegistros>((set, get) => ({
       id: Crypto.randomUUID(),
       usuarioId,
       fecha: hoy,
+      // RF-15: la hora de carga se registra sola y no cambia al editar.
       horaCarga: ahora,
       actualizadoEn: ahora,
       sincronizado: false,
@@ -59,7 +66,8 @@ export const useRegistroStore = create<EstadoRegistros>((set, get) => ({
   editarHoy: async (datos) => {
     const existente = get().registros[todayISO()];
     const errores = validar(datos);
-    if (errores.length > 0 || !existente) return errores;
+    if (errores.length > 0) return errores;
+    if (!existente) return get().guardar(datos);
 
     await persistir({
       ...existente,

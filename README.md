@@ -19,7 +19,7 @@ src/
   stores/         «control»     estado y coordinación (SesionStore, RegistroStore) — Zustand
   servicios/      «servicio»    lógica: MotorEstadistico, CalculadoraProgreso, ExportService, …
   persistencia/   «persistencia» base local del dispositivo (fuente de verdad)
-  api/            comunicación con el servidor (por ahora, respuestas simuladas)
+  api/            comunicación con el servidor (ApiClient); IA y música todavía simuladas
   dominio/        entidades y reglas de negocio (RegistroDiario, Usuario, …)
   componentes/    piezas visuales reutilizables
   navegacion/  datos/  tema/  i18n/  utils/
@@ -29,6 +29,9 @@ src/
   dispositivo**, sin conexión.
 - Las claves de servicios externos (Google, Claude, Spotify) **nunca** van
   en la app: solo el servidor habla con esos servicios.
+- La sesión se abre contra el servidor, pero la app no lo necesita para
+  arrancar: abre con lo guardado en el dispositivo. Los tokens viven en el
+  llavero del sistema (`AlmacenSeguro`), nunca en AsyncStorage.
 - Todos los textos están en español e inglés (`src/i18n`).
 
 ## Diseño
@@ -65,6 +68,14 @@ npx expo run:ios
 La primera vez compila la app nativa (tarda varios minutos). Las siguientes
 veces alcanza con `npx expo start` y abrir la app ya instalada.
 
+Para entrar hace falta el servidor ([mood-app-back](https://github.com/m4thisen/mood-app-back))
+corriendo con `npm run dev`. En el simulador la app lo busca en
+`http://localhost:3000`; para otra dirección, copiá `.env.example` a `.env` y
+cambiá `EXPO_PUBLIC_API_URL`. Hasta conectar Google, en desarrollo se entra
+con una cuenta de prueba: la app pide un email cualquiera y el mismo email
+entra siempre a la misma cuenta (el servidor tiene que estar con
+`MODO_IDENTIDAD=simulado`).
+
 Si cambiás dependencias nativas o `app.json`, regenerá el proyecto de iOS:
 
 ```bash
@@ -93,6 +104,5 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
 - [ ] Iteración 5 — Música e IA
 - [ ] Iteración 6 — Portabilidad y terminación
 
-Mientras el servidor no exista, la identidad, la IA y la música se simulan
-dentro de la app. Los datos se guardan provisoriamente en AsyncStorage y
+La IA y la música todavía se simulan dentro de la app. Los datos se guardan provisoriamente en AsyncStorage y
 pasan a SQLite en la iteración 2.

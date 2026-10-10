@@ -21,21 +21,6 @@ export interface Usuario {
 
 export const HORA_RECORDATORIO_POR_DEFECTO = '21:00';
 
-export function crearUsuarioNuevo(id: string, idioma: Idioma): Usuario {
-  return {
-    id,
-    nombre: '',
-    fechaNacimiento: '',
-    genero: 'PREFIERO_NO_DECIR',
-    idioma,
-    horaRecordatorio: HORA_RECORDATORIO_POR_DEFECTO,
-    frecuenciaIA: 1,
-    zonaHoraria: zonaHorariaDelDispositivo(),
-    bloquesActivos: [],
-    onboardingCompleto: false,
-  };
-}
-
 export function calcularEdad(fechaNacimiento: string, hoy: Date = new Date()): number {
   return differenceInYears(hoy, parseISO(fechaNacimiento));
 }

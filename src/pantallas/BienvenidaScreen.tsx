@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -9,25 +9,51 @@ import { Icono } from '@/componentes/Icono';
 import { colors, radius, spacing, typography } from '@/tema';
 import { moodScale } from '@/tema/colors';
 import { useTranslation } from '@/i18n';
-import { useSesionStore } from '@/stores/SesionStore';
+import { ErrorIngreso, useSesionStore } from '@/stores/SesionStore';
 import { RootStackParamList } from '@/navegacion/tipos';
 import { hapticos } from '@/utils/hapticos';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Bienvenida'>;
 
+type Accion = 'registro' | 'ingreso';
+
+const MENSAJES: Record<Exclude<ErrorIngreso, 'NO_SE_PUDO'>, string> = {
+  SIN_CONEXION: 'No pudimos conectarnos. Revisá tu conexión y probá de nuevo.',
+  DEMASIADOS_INTENTOS: 'Hubo demasiados intentos seguidos. Esperá un minuto y probá de nuevo.',
+};
+
 /**
  * Bienvenida (CU-01 y CU-02). Solo se entra con cuenta de Google: "Crear
  * cuenta" e "Iniciar sesión" usan el mismo endpoint (POST /auth/google) y
- * es el servidor el que decide si crea o si entra. El flujo con Google se
- * conecta en la iteración 1; mientras tanto ambos botones abren el
- * onboarding.
+ * es el servidor el que decide si crea o si entra. Hasta conectar Google, en
+ * desarrollo se entra con una identidad simulada.
  */
 export const BienvenidaScreen: React.FC<Props> = () => {
   const { t, language, setLanguage } = useTranslation();
   const iniciarSesion = useSesionStore((s) => s.iniciarSesion);
   const entrarConCuentaDemo = useSesionStore((s) => s.entrarConCuentaDemo);
+  const sesionVencida = useSesionStore((s) => s.sesionVencida);
+  const [enCurso, setEnCurso] = useState<Accion | null>(null);
+  const [error, setError] = useState<ErrorIngreso | null>(null);
 
-  const ingresar = () => iniciarSesion(language);
+  const ingresar = async (accion: Accion) => {
+    setError(null);
+    setEnCurso(accion);
+    const resultado = await iniciarSesion(language);
+    setEnCurso(null);
+    if (resultado) {
+      setError(resultado);
+      hapticos.error();
+    }
+  };
+
+  const aviso = error
+    ? error === 'NO_SE_PUDO'
+      ? t('welcome.googleError')
+      : MENSAJES[error]
+    : sesionVencida
+      ? 'Tu sesión se cerró. Volvé a entrar para seguir.'
+      : null;
 
   return (
     <SafeAreaView style={styles.pantalla}>
@@ -66,12 +92,33 @@ export const BienvenidaScreen: React.FC<Props> = () => {
       </View>
 
       <Animated.View entering={FadeInDown.delay(450).duration(600)} style={styles.acciones}>
-        <Boton titulo={t('welcome.register')} onPress={ingresar} />
-        <Boton titulo={t('welcome.login')} variante="texto" onPress={ingresar} />
-        {__DEV__ && (
-          <Boton titulo="Cuenta demo (desarrollo)" variante="texto" onPress={() => entrarConCuentaDemo(language)} />
+        {aviso && (
+          <Text style={[typography.footnote, styles.aviso, error && styles.error]} accessibilityLiveRegion="polite">
+            {aviso}
+          </Text>
         )}
-        <Text style={[typography.micro, styles.aviso]}>{t('welcome.disclaimer')}</Text>
+        <Boton
+          titulo={t('welcome.register')}
+          onPress={() => ingresar('registro')}
+          cargando={enCurso === 'registro'}
+          deshabilitado={enCurso !== null}
+        />
+        <Boton
+          titulo={t('welcome.login')}
+          variante="texto"
+          onPress={() => ingresar('ingreso')}
+          cargando={enCurso === 'ingreso'}
+          deshabilitado={enCurso !== null}
+        />
+        {__DEV__ && (
+          <Boton
+            titulo="Cuenta demo (desarrollo)"
+            variante="texto"
+            onPress={() => entrarConCuentaDemo(language)}
+            deshabilitado={enCurso !== null}
+          />
+        )}
+        <Text style={[typography.micro, styles.descargo]}>{t('welcome.disclaimer')}</Text>
       </Animated.View>
     </SafeAreaView>
   );
@@ -125,6 +172,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   aviso: {
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  error: {
+    color: colors.danger,
+  },
+  descargo: {
     color: colors.textTertiary,
     textAlign: 'center',
     marginTop: spacing.sm,

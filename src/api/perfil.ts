@@ -1,0 +1,48 @@
+/**
+ * Forma en que el servidor manda el perfil y los tags (GET /usuarios/me y
+ * GET /tags), y su traducción a las entidades de la app.
+ */
+import { FrecuenciaIA, Genero, Idioma, TagPersonalizado, TipoTag, Usuario } from '@/dominio';
+
+export interface PerfilApi {
+  id: string;
+  email: string;
+  nombre: string | null;
+  /** yyyy-mm-dd */
+  fechaNacimiento: string | null;
+  genero: Genero | null;
+  idioma: Idioma;
+  /** HH:mm */
+  horaRecordatorio: string;
+  frecuenciaIa: FrecuenciaIA;
+  zonaHoraria: string;
+  onboardingCompleto: boolean;
+  bloques: string[];
+}
+
+export interface TagApi {
+  id: string;
+  nombre: string;
+  tipo: TipoTag;
+  activo: boolean;
+}
+
+/** Lo que todavía no se completó en el onboarding llega vacío del servidor. */
+export function aUsuario(perfil: PerfilApi): Usuario {
+  return {
+    id: perfil.id,
+    nombre: perfil.nombre ?? '',
+    fechaNacimiento: perfil.fechaNacimiento ?? '',
+    genero: perfil.genero ?? 'PREFIERO_NO_DECIR',
+    idioma: perfil.idioma,
+    horaRecordatorio: perfil.horaRecordatorio,
+    frecuenciaIA: perfil.frecuenciaIa,
+    zonaHoraria: perfil.zonaHoraria,
+    bloquesActivos: perfil.bloques,
+    onboardingCompleto: perfil.onboardingCompleto,
+  };
+}
+
+export function aTag({ id, nombre, tipo, activo }: TagApi): TagPersonalizado {
+  return { id, nombre, tipo, activo };
+}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { PasoOnboarding } from '@/componentes/PasoOnboarding';
 import { Boton } from '@/componentes/Boton';
 import { Icono } from '@/componentes/Icono';
@@ -56,7 +56,7 @@ export const RecordatorioScreen: React.FC<Props> = ({ navigation }) => {
           mode="time"
           display="spinner"
           style={{ height: 216 }}
-          onChange={(_e: DateTimePickerEvent, fecha?: Date) => fecha && setHora(fecha)}
+          onValueChange={(_e, fecha) => setHora(fecha)}
           themeVariant="dark"
           locale={localeSelector(language)}
           is24Hour

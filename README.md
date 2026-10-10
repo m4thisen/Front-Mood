@@ -93,6 +93,30 @@ Si cambiás dependencias nativas o `app.json`, regenerá el proyecto de iOS (si
 npx expo prebuild --platform ios --clean
 ```
 
+## Dependencias y auditoría
+
+La app se construye y se prueba para iPhone.
+
+`npm audit` todavía marca dos avisos altos y uno moderado, todos en
+herramientas de compilación y de pruebas que no tienen versión corregida
+publicada:
+
+| Paquete | Aviso | Lo trae |
+|---|---|---|
+| `braces` 3.0.3 (alto) | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | Jest y la CLI de Expo, para resolver patrones de archivos |
+| `node-forge` 1.4.0 (alto) | [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) | La CLI de Expo, para firmar actualizaciones (no se usa) |
+| `sprintf-js` 1.1.3 (moderado) | [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) | Jest (cobertura) |
+
+Ninguno viaja dentro de la app: el bundle de producción
+(`npx expo export --platform ios --source-maps`) no incluye ningún módulo de
+esos paquetes. Además, los tres fallan solo con datos de un atacante (patrones,
+firmas o formatos armados a propósito), y estas herramientas solo procesan
+archivos del propio proyecto. Hay que volver a correr `npm audit` antes de la
+entrega por si aparece la versión corregida.
+
+`uuid` sí tenía arreglo: se fuerza la 11.1.1 con `overrides` en
+`package.json`.
+
 ## Scripts
 
 | Comando | Qué hace |
@@ -111,8 +135,7 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
 - [x] **Iteración 1 — Acceso y configuración**: entrar con Google, sesión
   segura que se mantiene entre usos y se renueva sola, onboarding, Mi cuenta
   y tags guardados en el servidor (también si se cambian sin conexión).
-  Pendiente: Google en Android (necesita la huella SHA-1 de la firma) y la
-  prueba en un iPhone físico.
+  Pendiente: la prueba en un iPhone físico.
 - [ ] Iteración 2 — Registro diario (SQLite, recordatorio)
 - [ ] Iteración 3 — Sincronización
 - [ ] Iteración 4 — Visualización y análisis

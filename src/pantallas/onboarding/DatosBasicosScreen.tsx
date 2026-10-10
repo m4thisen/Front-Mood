@@ -113,7 +113,7 @@ export const DatosBasicosScreen: React.FC<Props> = ({ navigation }) => {
           display="spinner"
           style={{ height: 216 }}
           maximumDate={new Date()}
-          onChange={(_e, fecha) => fecha && setBorradorNacimiento(fecha)}
+          onValueChange={(_e, fecha) => setBorradorNacimiento(fecha)}
           themeVariant="dark"
           locale={localeSelector(language)}
         />

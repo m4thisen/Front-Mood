@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
@@ -233,7 +233,7 @@ export const CuentaScreen: React.FC = () => {
           mode="time"
           display="spinner"
           style={{ height: 216 }}
-          onChange={(_e: DateTimePickerEvent, fecha?: Date) => fecha && setHoraBorrador(fecha)}
+          onValueChange={(_e, fecha) => setHoraBorrador(fecha)}
           themeVariant="dark"
           locale={localeSelector(language)}
           is24Hour

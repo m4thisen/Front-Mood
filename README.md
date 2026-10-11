@@ -37,6 +37,12 @@ src/
   migraciones y repite las reglas del dominio con restricciones (un registro
   por fecha, ánimo de 1 a 5, rangos de sueño y ejercicio). Todo esto
   funciona sin conexión: la app cumple su función principal sin el servidor.
+- Los registros se **sincronizan** con el servidor en segundo plano
+  (`SyncService`, CU-12): al guardar el día, al abrir la app, al volver a
+  ella, cada 10 minutos y al recuperar la conexión. Sin señal quedan
+  pendientes y se reintenta con espera creciente; nunca se pierde ni se
+  duplica nada. Si el mismo día se editó en dos teléfonos, gana la última
+  edición. En un teléfono nuevo, el historial baja solo al entrar.
 - El recordatorio diario es una notificación **local**: se programan los
   avisos de los próximos 14 días a la hora elegida, salteando los días ya
   registrados. Tocar el aviso abre el formulario del día.
@@ -148,11 +154,12 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
   día con sus validaciones y la regla de medianoche, edición solo del día en
   curso y recordatorio local que no molesta si ya registraste.
   Pendiente: la prueba en un iPhone físico.
-- [ ] Iteración 3 — Sincronización
+- [x] **Iteración 3 — Sincronización**: registros respaldados en el
+  servidor, historial completo en un teléfono nuevo, pendientes que se
+  mandan antes de cerrar sesión y reintentos ante cortes.
+  Pendiente: la prueba en un iPhone físico.
 - [ ] Iteración 4 — Visualización y análisis
 - [ ] Iteración 5 — Música e IA
 - [ ] Iteración 6 — Portabilidad y terminación
 
-La IA y la música todavía se simulan dentro de la app. Los registros quedan
-pendientes en el teléfono hasta la sincronización (iteración 3); por eso, al
-entrar en un teléfono nuevo, todavía no se baja el historial.
+La IA y la música todavía se simulan dentro de la app.

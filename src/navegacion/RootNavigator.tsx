@@ -14,6 +14,7 @@ import { DetalleDiaScreen } from '@/pantallas/DetalleDiaScreen';
 import { useSesionStore } from '@/stores/SesionStore';
 import { navegacion } from './referencia';
 import { AbrirDesdeRecordatorio, AvisoPermisoRecordatorio } from './RecordatorioDiario';
+import { SincronizacionAutomatica } from './SincronizacionAutomatica';
 import { colors } from '@/tema';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -71,6 +72,7 @@ export const RootNavigator: React.FC = () => {
     <NavigationContainer theme={navTheme} ref={navegacion} onReady={() => setNavegacionLista(true)}>
       <AbrirDesdeRecordatorio navegacionLista={navegacionLista} />
       <AvisoPermisoRecordatorio />
+      <SincronizacionAutomatica />
       <Stack.Navigator
         screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
       >

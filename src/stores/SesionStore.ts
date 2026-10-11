@@ -162,14 +162,17 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
     await paraElServidor(usuario.id, (usuarioId) => preferencias.marcarTag(usuarioId, id));
   },
 
-  // CU-03: antes de revocar la sesión intenta mandar lo pendiente. Los datos
-  // locales se conservan bajo el id del usuario: si no hubo conexión, se
-  // mandan la próxima vez que entre. La sincronización de los registros se
-  // suma en la iteración 3. Los recordatorios se cancelan.
+  // CU-03: antes de revocar la sesión intenta mandar lo pendiente (registros
+  // y preferencias). Los datos locales se conservan bajo el id del usuario:
+  // si no hubo conexión, se mandan la próxima vez que entre. Los
+  // recordatorios se cancelan.
   cerrarSesion: async () => {
     const usuario = get().usuario;
     if (usuario && usuario.id !== ID_USUARIO_DEMO) {
-      await Promise.race([preferencias.enviar(usuario.id), esperar(LIMITE_ENVIO_AL_SALIR_MS)]);
+      await Promise.race([
+        Promise.all([preferencias.enviar(usuario.id), useRegistroStore.getState().sincronizar()]),
+        esperar(LIMITE_ENVIO_AL_SALIR_MS),
+      ]);
     }
     await authService.cerrarSesion();
     await cerrarLocal();
@@ -278,6 +281,8 @@ async function abrirSesion(usuario: Usuario): Promise<void> {
   useSesionStore.setState({ usuario, tags });
   // Al abrir la app o entrar en otro teléfono, los avisos quedan al día (sin pedir permiso).
   void useSesionStore.getState().programarRecordatorio();
+  // CU-12 al abrir la app; en un teléfono nuevo, baja el historial (CU-02, paso 8).
+  void useRegistroStore.getState().sincronizar();
 }
 
 /** Tags que se muestran en el formulario de "Hoy" y en Mi cuenta. */

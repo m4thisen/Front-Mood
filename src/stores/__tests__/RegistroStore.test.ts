@@ -10,6 +10,10 @@ import { useRegistroStore } from '../RegistroStore';
 
 jest.mock('expo-sqlite', () => require('@/__pruebas__/sqliteEnMemoria'));
 jest.mock('expo-crypto', () => ({ randomUUID: () => require('crypto').randomUUID() }));
+// Sin servidor: la sincronización se prueba aparte (SyncService.test).
+jest.mock('@/servicios/conexion', () => ({
+  api: { post: () => Promise.reject(new (require('@/api/ApiClient').ErrorApi)('SESION_PERDIDA', 401)) },
+}));
 
 const ID = 'usuario-prueba';
 

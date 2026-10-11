@@ -104,7 +104,7 @@ describe('RegistroLocalRepository', () => {
     await RegistroLocal.guardar(registro('2026-10-09'));
     await RegistroLocal.guardar(registro('2026-10-10'));
 
-    await RegistroLocal.marcarSincronizados(ID, ['id-2026-10-09']);
+    await RegistroLocal.marcarSincronizados(ID, [registro('2026-10-09')]);
 
     expect((await RegistroLocal.obtenerPendientes(ID)).map((r) => r.fecha)).toEqual(['2026-10-10']);
     expect(await RegistroLocal.obtenerPorFecha(ID, '2026-10-09')).toMatchObject({ sincronizado: true });

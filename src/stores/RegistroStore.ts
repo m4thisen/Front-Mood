@@ -1,14 +1,18 @@
 /**
  * RegistroStore — «control» en el diagrama de clases de la aplicación móvil.
  * Mantiene en memoria los registros del usuario y coordina el guardado del
- * día (CU-09) y su edición (CU-11) contra la base local.
+ * día (CU-09) y su edición (CU-11) contra la base local. Después de guardar
+ * dispara la sincronización (SyncService, CU-12), sin esperarla.
  */
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import * as Crypto from 'expo-crypto';
 import { DatosRegistro, ErrorGuardado, esEditable, NivelAnimo, RegistroDiario, validar } from '@/dominio';
 import * as RegistroLocal from '@/persistencia/RegistroLocalRepository';
+import { ID_USUARIO_DEMO } from '@/datos/demo';
 import { colorDelAlma, diasRegistrados, rachaActual, rachaMaxima } from '@/servicios/CalculadoraProgreso';
+import { api } from '@/servicios/conexion';
+import { SyncService } from '@/servicios/SyncService';
 import { todayISO } from '@/utils/fecha';
 
 interface EstadoRegistros {
@@ -25,6 +29,11 @@ interface EstadoRegistros {
   /** Edita el registro de hoy. Los días anteriores son de solo lectura (RN-03). */
   editarHoy: (datos: DatosRegistro) => Promise<ErrorGuardado[]>;
   obtenerMes: (anio: number, mes: number) => RegistroDiario[];
+  /**
+   * CU-12: manda lo pendiente y trae lo que falta. Silenciosa: si no hay
+   * conexión, reintenta sola más tarde. La cuenta demo no tiene servidor.
+   */
+  sincronizar: () => Promise<void>;
   limpiar: () => void;
 }
 
@@ -84,15 +93,35 @@ export const useRegistroStore = create<EstadoRegistros>((set, get) => ({
     return Object.values(get().registros).filter((r) => r.fecha.startsWith(prefijo));
   },
 
-  limpiar: () => set({ usuarioId: null, registros: {} }),
+  sincronizar: async () => {
+    const { usuarioId } = get();
+    if (!usuarioId || usuarioId === ID_USUARIO_DEMO) return;
+    const resultado = await sync.sincronizar(usuarioId);
+    // Lo que cambió en la base (marcas y registros nuevos) se refleja en pantalla.
+    if (resultado && (resultado.enviados > 0 || resultado.recibidos > 0) && get().usuarioId === usuarioId) {
+      await get().cargar(usuarioId);
+    }
+  },
+
+  limpiar: () => {
+    sync.detener();
+    set({ usuarioId: null, registros: {} });
+  },
 }));
 
 /** Primero se escribe en la base local y recién después se actualiza la pantalla. */
+const sync = new SyncService(api, RegistroLocal, (usuarioId) => useRegistroStore.getState().usuarioId === usuarioId);
+
+/**
+ * Primero se escribe en la base local y recién después se actualiza la
+ * pantalla; la sincronización sale después, sin esperarla (CU-09, paso 12).
+ */
 async function persistir(registro: RegistroDiario): Promise<void> {
   await RegistroLocal.guardar(registro);
   useRegistroStore.setState((estado) => ({
     registros: { ...estado.registros, [registro.fecha]: registro },
   }));
+  void useRegistroStore.getState().sincronizar();
 }
 
 /** Todos los registros, ordenados por fecha. */

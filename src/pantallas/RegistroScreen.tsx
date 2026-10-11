@@ -24,6 +24,9 @@ import {
   DatosRegistro,
   ErrorGuardado,
   ErrorValidacion,
+  LARGO_MAXIMO_CANCION,
+  LARGO_MAXIMO_TEXTO,
+  LARGO_MAXIMO_VALOR_TAG,
   NivelAnimo,
   RANGO_HORAS_SUENO,
   RANGO_MINUTOS_EJERCICIO,
@@ -322,6 +325,7 @@ export const RegistroScreen: React.FC = () => {
         <TextInput
           value={cancion}
           onChangeText={setCancion}
+          maxLength={LARGO_MAXIMO_CANCION}
           placeholder={t('today.songPlaceholder')}
           placeholderTextColor={colors.textTertiary}
           style={[typography.bodyMedium, styles.entrada]}
@@ -353,6 +357,7 @@ export const RegistroScreen: React.FC = () => {
                 <TextInput
                   value={(valoresTags[tag.id] as string) ?? ''}
                   onChangeText={(valor) => setValoresTags((v) => ({ ...v, [tag.id]: valor }))}
+                  maxLength={LARGO_MAXIMO_VALOR_TAG}
                   placeholderTextColor={colors.textTertiary}
                   style={[typography.bodyMedium, styles.entrada]}
                 />
@@ -365,6 +370,7 @@ export const RegistroScreen: React.FC = () => {
       <TextInput
         value={texto}
         onChangeText={setTexto}
+        maxLength={LARGO_MAXIMO_TEXTO}
         placeholder={t('today.notePlaceholder')}
         placeholderTextColor={colors.textTertiary}
         multiline

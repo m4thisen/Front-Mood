@@ -4,6 +4,7 @@
  * y, si aparece uno ya usado, se cierran todas las sesiones.
  */
 import type { PedirHttp } from '@/api/ApiClient';
+import type { RegistroApi } from '@/api/registros';
 import type { Llavero } from '@/persistencia/AlmacenSeguro';
 
 export const URL_FALSA = 'https://api.prueba';
@@ -41,6 +42,12 @@ export class ServidorFalso {
   readonly tags = new Map<string, TagGuardado>();
   /** Respuestas de error forzadas, por "MÉTODO /ruta". */
   readonly fallas = new Map<string, { estado: number; error: string }>();
+  /** Registros en la nube, con el orden en que se guardaron (hace de cursor). */
+  readonly registros = new Map<string, { registro: RegistroApi; orden: number }>();
+  /** Ids que /sync rechaza por datos inválidos (E3). */
+  readonly rechazarIds = new Set<string>();
+  cambiosPorPagina = 100;
+  private ordenSync = 0;
   /** Se pone en true si alguna vez llegó un token de refresco ya usado. */
   reusoDetectado = false;
 
@@ -146,7 +153,59 @@ export class ServidorFalso {
   };
 
   /** Perfil y tags, con las mismas reglas que el servidor real. */
+  /** Carga un registro como si lo hubiera subido otro teléfono. */
+  guardarRegistro(registro: RegistroApi): void {
+    this.ordenSync += 1;
+    this.registros.set(registro.id, { registro, orden: this.ordenSync });
+  }
+
+  /** /sync con las mismas reglas que el real: gana la última edición, un registro por fecha. */
+  private sincronizar(cuerpo: Record<string, unknown>): Response {
+    const enviados = cuerpo.registros as RegistroApi[];
+    const aceptados: string[] = [];
+    const rechazados: { id: string; motivo: string }[] = [];
+    const iguales = new Set<string>();
+    const aDevolver: string[] = [];
+    this.ordenSync += 1;
+    const orden = this.ordenSync;
+
+    for (const r of enviados) {
+      if (this.rechazarIds.has(r.id)) {
+        rechazados.push({ id: r.id, motivo: 'DATOS_INVALIDOS' });
+        continue;
+      }
+      aceptados.push(r.id);
+      const existente =
+        this.registros.get(r.id) ?? [...this.registros.values()].find((x) => x.registro.fecha === r.fecha);
+      if (!existente) {
+        this.registros.set(r.id, { registro: r, orden });
+        iguales.add(r.id);
+      } else if (Date.parse(r.actualizadoEn) > Date.parse(existente.registro.actualizadoEn)) {
+        const id = existente.registro.id;
+        this.registros.set(id, { registro: { ...r, id }, orden });
+        if (id === r.id) iguales.add(r.id);
+      } else if (existente.registro.id === r.id && existente.registro.actualizadoEn === r.actualizadoEn) {
+        iguales.add(r.id);
+      } else {
+        aDevolver.push(existente.registro.id);
+      }
+    }
+
+    const desde = cuerpo.cursor === null ? 0 : Number(cuerpo.cursor);
+    const posteriores = [...this.registros.values()].filter((x) => x.orden > desde).sort((a, b) => a.orden - b.orden);
+    const pagina = posteriores.slice(0, this.cambiosPorPagina);
+    const extra = aDevolver.map((id) => this.registros.get(id)!).filter((x) => !pagina.includes(x));
+    return respuesta(200, {
+      aceptados,
+      rechazados,
+      cambios: [...pagina, ...extra].map((x) => x.registro).filter((r) => !iguales.has(r.id)),
+      nuevoCursor: pagina.length ? String(pagina.at(-1)!.orden) : (cuerpo.cursor ?? null),
+      hayMas: posteriores.length > this.cambiosPorPagina,
+    });
+  }
+
   private conSesion(metodo: string, ruta: string, cuerpo: Record<string, unknown>): Response {
+    if (metodo === 'POST' && ruta === '/sync') return this.sincronizar(cuerpo);
     if (metodo === 'PATCH' && ruta === '/usuarios/me') {
       this.perfil = { ...this.perfil, ...cuerpo };
       return respuesta(200, this.perfil);

@@ -105,6 +105,18 @@ export const MIGRACIONES: readonly string[] = [
     PRIMARY KEY (registro_id, clima)
   ) STRICT;
   `,
+  // Iteración 3: sincronización (CU-12).
+  `
+  -- E3: el servidor lo rechazó; queda para revisión y no se reintenta solo.
+  ALTER TABLE registro_diario ADD COLUMN rechazado INTEGER NOT NULL DEFAULT 0 CHECK (rechazado IN (0, 1));
+
+  CREATE TABLE sincronizacion (
+    usuario_id TEXT PRIMARY KEY REFERENCES usuario (id) ON DELETE CASCADE,
+    -- Opaco: lo arma el servidor ("instante|id").
+    cursor     TEXT,
+    ultima_en  TEXT
+  ) STRICT;
+  `,
 ];
 
 let instancia: Promise<BaseSQLite> | null = null;

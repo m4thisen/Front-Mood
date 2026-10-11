@@ -43,6 +43,10 @@ export type DatosRegistro = Pick<
 > & { nivelAnimo: NivelAnimo | null };
 
 export const RANGO_HORAS_SUENO = { min: 0, max: 24 } as const;
+/** Iguales que en el servidor: más largo, /sync lo rechazaría (CU-12, E3). */
+export const LARGO_MAXIMO_TEXTO = 5000;
+export const LARGO_MAXIMO_CANCION = 200;
+export const LARGO_MAXIMO_VALOR_TAG = 200;
 export const RANGO_MINUTOS_EJERCICIO = { min: 0, max: 1440 } as const;
 
 export type ErrorValidacion =

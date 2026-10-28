@@ -117,6 +117,12 @@ export const MIGRACIONES: readonly string[] = [
     ultima_en  TEXT
   ) STRICT;
   `,
+  // Iteración 4: permiso para que Claude lea el texto libre (Ley 25.326).
+  `
+  ALTER TABLE usuario ADD COLUMN analisis_texto INTEGER NOT NULL DEFAULT 0 CHECK (analisis_texto IN (0, 1));
+  -- El permiso viaja aparte del resto del perfil: solo cuando se cambia en este teléfono.
+  ALTER TABLE preferencias_pendientes ADD COLUMN permiso_texto INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 let instancia: Promise<BaseSQLite> | null = null;

@@ -36,6 +36,7 @@ export async function cargarCuentaDemo(idioma: 'es' | 'en'): Promise<string> {
     zonaHoraria: zonaHorariaDelDispositivo(),
     bloquesActivos: ['emociones', 'gente', 'ejercicio', 'trabajo', 'descanso'],
     onboardingCompleto: true,
+    analisisTexto: false,
   };
   await UsuarioLocal.guardar(usuario);
   await UsuarioLocal.guardarTags(usuario.id, [TAG_MEDITE]);

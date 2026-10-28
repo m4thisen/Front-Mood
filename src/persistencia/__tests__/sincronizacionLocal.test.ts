@@ -22,6 +22,7 @@ beforeEach(async () => {
     zonaHoraria: 'America/Argentina/Buenos_Aires',
     bloquesActivos: [],
     onboardingCompleto: true,
+    analisisTexto: false,
   });
 });
 

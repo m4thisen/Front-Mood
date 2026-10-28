@@ -19,6 +19,7 @@ const usuario = (id: string, extra: Partial<Usuario> = {}): Usuario => ({
   zonaHoraria: 'America/Argentina/Buenos_Aires',
   bloquesActivos: ['estudios', 'gente'],
   onboardingCompleto: true,
+  analisisTexto: false,
   ...extra,
 });
 
@@ -142,10 +143,10 @@ describe('UsuarioLocalRepository', () => {
   });
 
   it('los cambios pendientes de enviar arrancan vacíos y se guardan', async () => {
-    expect(await UsuarioLocal.obtenerPendientes(ID)).toEqual({ perfil: 0, tags: {} });
+    expect(await UsuarioLocal.obtenerPendientes(ID)).toEqual({ perfil: 0, tags: {}, permisoTexto: 0 });
 
-    await UsuarioLocal.guardarPendientes(ID, { perfil: 2, tags: { 't-1': 1 } });
+    await UsuarioLocal.guardarPendientes(ID, { perfil: 2, tags: { 't-1': 1 }, permisoTexto: 3 });
 
-    expect(await UsuarioLocal.obtenerPendientes(ID)).toEqual({ perfil: 2, tags: { 't-1': 1 } });
+    expect(await UsuarioLocal.obtenerPendientes(ID)).toEqual({ perfil: 2, tags: { 't-1': 1 }, permisoTexto: 3 });
   });
 });

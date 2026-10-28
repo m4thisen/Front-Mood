@@ -5,7 +5,7 @@
  * próximo intento (al abrir la app, al volver a ella o al cerrar sesión).
  */
 import { ApiClient, ErrorApi } from '@/api/ApiClient';
-import { aCambiosPerfil, TagApi } from '@/api/perfil';
+import { aCambiosPerfil, PermisoTextoApi, TagApi } from '@/api/perfil';
 import { TagPersonalizado, Usuario } from '@/dominio';
 import type { Pendientes } from '@/persistencia/UsuarioLocalRepository';
 
@@ -38,6 +38,13 @@ export class PreferenciasPendientes {
     });
   }
 
+  /** El permiso para analizar el texto viaja aparte del perfil: solo lo que se cambió en este teléfono. */
+  marcarPermisoTexto(usuarioId: string): Promise<void> {
+    return this.modificar(usuarioId, (p) => {
+      p.permisoTexto += 1;
+    });
+  }
+
   marcarTag(usuarioId: string, tagId: string): Promise<void> {
     return this.modificar(usuarioId, (p) => {
       p.tags[tagId] = (p.tags[tagId] ?? 0) + 1;
@@ -46,6 +53,10 @@ export class PreferenciasPendientes {
 
   async perfilPendiente(usuarioId: string): Promise<boolean> {
     return (await this.local.obtenerPendientes(usuarioId)).perfil > 0;
+  }
+
+  async permisoTextoPendiente(usuarioId: string): Promise<boolean> {
+    return (await this.local.obtenerPendientes(usuarioId)).permisoTexto > 0;
   }
 
   async tagsPendientes(usuarioId: string): Promise<string[]> {
@@ -86,6 +97,18 @@ export class PreferenciasPendientes {
       }
       await this.modificar(usuarioId, (p) => {
         if (p.perfil === pendientes.perfil) p.perfil = 0;
+      });
+    }
+
+    if (pendientes.permisoTexto > 0) {
+      const usuario = await this.local.obtener(usuarioId);
+      if (usuario) {
+        const permiso: PermisoTextoApi = { analisisTexto: usuario.analisisTexto };
+        const resultado = await this.intentar(usuarioId, () => this.api.patch('/usuarios/me', permiso));
+        if (resultado === 'REINTENTAR') return;
+      }
+      await this.modificar(usuarioId, (p) => {
+        if (p.permisoTexto === pendientes.permisoTexto) p.permisoTexto = 0;
       });
     }
 

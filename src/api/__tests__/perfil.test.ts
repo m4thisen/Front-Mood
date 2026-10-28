@@ -16,6 +16,7 @@ const perfilNuevo: PerfilApi = {
   zonaHoraria: 'America/Argentina/Buenos_Aires',
   onboardingCompleto: false,
   bloques: [],
+  analisisTexto: false,
 };
 
 describe('perfil del servidor → Usuario', () => {
@@ -31,6 +32,7 @@ describe('perfil del servidor → Usuario', () => {
       zonaHoraria: 'America/Argentina/Buenos_Aires',
       bloquesActivos: [],
       onboardingCompleto: false,
+      analisisTexto: false,
     });
   });
 

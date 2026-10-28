@@ -19,3 +19,12 @@ export async function guardarRecordatorioPermitido(permitido: boolean): Promise<
   if (permitido) await AsyncStorage.setItem(CLAVES.recordatorioPermitido, '1');
   else await AsyncStorage.removeItem(CLAVES.recordatorioPermitido);
 }
+
+/** Si ya se le preguntó a esa persona, en este teléfono, si la IA puede leer su texto: se pregunta una sola vez. */
+export async function permisoTextoPreguntado(usuarioId: string): Promise<boolean> {
+  return (await AsyncStorage.getItem(`${CLAVES.permisoTextoPreguntado}/${usuarioId}`)) !== null;
+}
+
+export async function marcarPermisoTextoPreguntado(usuarioId: string): Promise<void> {
+  await AsyncStorage.setItem(`${CLAVES.permisoTextoPreguntado}/${usuarioId}`, '1');
+}

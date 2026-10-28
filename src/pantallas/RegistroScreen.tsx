@@ -11,6 +11,7 @@ import { Boton } from '@/componentes/Boton';
 import { Icono } from '@/componentes/Icono';
 import { SelectorNumerico } from '@/componentes/SelectorNumerico';
 import { CelebracionGuardado } from '@/componentes/CelebracionGuardado';
+import { PreguntaPermisoTexto } from '@/componentes/PreguntaPermisoTexto';
 import { useAltoBarraInferior } from '@/componentes/TabBar';
 import { iconoDeBloque, ICONOS_CLIMA } from '@/componentes/iconosDominio';
 import { colors, radius, spacing, typography } from '@/tema';
@@ -18,6 +19,7 @@ import { useTranslation } from '@/i18n';
 import { useSesionStore, useTagsActivos } from '@/stores/SesionStore';
 import { useIndicadoresProgreso, useRegistroStore } from '@/stores/RegistroStore';
 import { bloquesActivos, claveTraduccionBloque, claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
+import * as PreferenciasDispositivo from '@/persistencia/PreferenciasDispositivo';
 import {
   Clima,
   CLIMAS,
@@ -56,6 +58,7 @@ export const RegistroScreen: React.FC = () => {
   const usuario = useSesionStore((s) => s.usuario);
   const tagsActivos = useTagsActivos();
   const guardar = useRegistroStore((s) => s.guardar);
+  const cambiarPermisoTexto = useSesionStore((s) => s.cambiarPermisoTexto);
   const { rachaActual } = useIndicadoresProgreso();
   const refScroll = useRef<ScrollView>(null);
 
@@ -77,6 +80,34 @@ export const RegistroScreen: React.FC = () => {
   const [guardando, setGuardando] = useState(false);
   const [celebrando, setCelebrando] = useState(false);
   const [errores, setErrores] = useState<Set<ErrorValidacion>>(new Set());
+
+  // La primera vez que escribe, se le pregunta si la IA puede leer el texto (una sola vez por teléfono).
+  const [preguntarPermiso, setPreguntarPermiso] = useState(false);
+  const usuarioId = usuario?.id;
+  const conPermiso = usuario?.analisisTexto ?? false;
+  useEffect(() => {
+    if (!usuarioId || conPermiso) {
+      setPreguntarPermiso(false);
+      return;
+    }
+    let vigente = true;
+    void PreferenciasDispositivo.permisoTextoPreguntado(usuarioId).then((yaPreguntado) => {
+      if (vigente) setPreguntarPermiso(!yaPreguntado);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [usuarioId, conPermiso]);
+
+  const responderPermiso = async (permitido: boolean) => {
+    setPreguntarPermiso(false);
+    if (!usuarioId) return;
+    await PreferenciasDispositivo.marcarPermisoTextoPreguntado(usuarioId);
+    if (permitido) {
+      hapticos.exito();
+      await cambiarPermisoTexto(true);
+    }
+  };
 
   const rellenar = useCallback((registro: RegistroDiario | null) => {
     setNivelAnimo(registro?.nivelAnimo ?? null);
@@ -376,6 +407,7 @@ export const RegistroScreen: React.FC = () => {
         multiline
         style={[typography.body, styles.nota]}
       />
+      {preguntarPermiso && texto.trim() !== '' && <PreguntaPermisoTexto onResponder={responderPermiso} />}
 
       <Modal visible={celebrando} transparent animationType="none" statusBarTranslucent>
         {nivelAnimo && (

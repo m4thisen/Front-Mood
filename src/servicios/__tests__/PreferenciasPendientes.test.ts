@@ -18,13 +18,14 @@ const lucia: Usuario = {
   zonaHoraria: 'America/Argentina/Buenos_Aires',
   bloquesActivos: [],
   onboardingCompleto: false,
+  analisisTexto: false,
 };
 
 /** La base local del teléfono, en memoria. */
 class TelefonoFalso implements DatosLocales {
   usuario: Usuario = { ...lucia };
   tags: TagPersonalizado[] = [];
-  pendientes: Pendientes = { perfil: 0, tags: {} };
+  pendientes: Pendientes = { perfil: 0, tags: {}, permisoTexto: 0 };
 
   obtener = async () => ({ ...this.usuario });
   obtenerTags = async () => this.tags.map((t) => ({ ...t }));
@@ -135,6 +136,40 @@ describe('PreferenciasPendientes · perfil (CU-04 a CU-07)', () => {
 
     expect(servidor.pedidosA('/usuarios/me')).toHaveLength(0);
     expect(await preferencias.perfilPendiente(ID)).toBe(true);
+  });
+});
+
+describe('PreferenciasPendientes · permiso para analizar el texto', () => {
+  it('manda solo el permiso, sin el resto del perfil', async () => {
+    telefono.usuario = { ...telefono.usuario, analisisTexto: true };
+    await preferencias.marcarPermisoTexto(ID);
+
+    await preferencias.enviar(ID);
+
+    expect(servidor.pedidosA('/usuarios/me').map((p) => p.cuerpo)).toEqual([{ analisisTexto: true }]);
+    expect(await preferencias.permisoTextoPendiente(ID)).toBe(false);
+  });
+
+  it('el perfil completo nunca lleva el permiso: un teléfono desactualizado no lo puede apagar', async () => {
+    await cambiarPerfil({ frecuenciaIA: 3 });
+
+    await preferencias.enviar(ID);
+
+    expect(servidor.pedidosA('/usuarios/me')[0].cuerpo).not.toHaveProperty('analisisTexto');
+  });
+
+  it('sin conexión queda pendiente, y se manda en el próximo intento', async () => {
+    servidor.sinConexion = true;
+    telefono.usuario = { ...telefono.usuario, analisisTexto: true };
+    await preferencias.marcarPermisoTexto(ID);
+
+    await preferencias.enviar(ID);
+    expect(await preferencias.permisoTextoPendiente(ID)).toBe(true);
+
+    servidor.sinConexion = false;
+    await preferencias.enviar(ID);
+    expect(servidor.perfil).toMatchObject({ analisisTexto: true });
+    expect(await preferencias.permisoTextoPendiente(ID)).toBe(false);
   });
 });
 

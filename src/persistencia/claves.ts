@@ -8,6 +8,8 @@ export const CLAVES = {
   coachmarkHoyVisto: `${PREFIJO}/coachmark-hoy-visto`,
   /** Si alguna vez se dio el permiso de notificaciones, para avisar si se quita. */
   recordatorioPermitido: `${PREFIJO}/recordatorio-permitido`,
+  /** Si ya se le preguntó a cada persona si la IA puede leer su texto (más /<usuarioId>). */
+  permisoTextoPreguntado: `${PREFIJO}/permiso-texto-preguntado`,
 } as const;
 
 /**

@@ -19,6 +19,7 @@ interface FilaUsuario {
   zona_horaria: string;
   bloques_activos: string;
   onboarding_completo: number;
+  analisis_texto: number;
 }
 
 interface FilaTag {
@@ -38,6 +39,12 @@ export interface Pendientes {
   perfil: number;
   /** Versión de cada tag sin enviar, por id. */
   tags: Record<string, number>;
+  /**
+   * Versión del permiso para analizar el texto sin enviar. Va aparte del
+   * perfil: un teléfono con el perfil viejo nunca apaga un permiso que se dio
+   * en otro, porque solo lo manda cuando se cambia en este.
+   */
+  permisoTexto: number;
 }
 
 /** Id del usuario con la sesión abierta en este dispositivo, si hay uno. */
@@ -71,8 +78,8 @@ export async function guardar(usuario: Usuario): Promise<void> {
   await base.ejecutar(
     `INSERT INTO usuario (
        id, nombre, fecha_nacimiento, genero, idioma, hora_recordatorio, frecuencia_ia,
-       zona_horaria, bloques_activos, onboarding_completo
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       zona_horaria, bloques_activos, onboarding_completo, analisis_texto
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (id) DO UPDATE SET
        nombre = excluded.nombre,
        fecha_nacimiento = excluded.fecha_nacimiento,
@@ -82,7 +89,8 @@ export async function guardar(usuario: Usuario): Promise<void> {
        frecuencia_ia = excluded.frecuencia_ia,
        zona_horaria = excluded.zona_horaria,
        bloques_activos = excluded.bloques_activos,
-       onboarding_completo = excluded.onboarding_completo`,
+       onboarding_completo = excluded.onboarding_completo,
+       analisis_texto = excluded.analisis_texto`,
     [
       usuario.id,
       usuario.nombre,
@@ -94,6 +102,7 @@ export async function guardar(usuario: Usuario): Promise<void> {
       usuario.zonaHoraria,
       JSON.stringify(usuario.bloquesActivos),
       usuario.onboardingCompleto ? 1 : 0,
+      usuario.analisisTexto ? 1 : 0,
     ]
   );
 }
@@ -124,19 +133,22 @@ export async function guardarTags(usuarioId: string, tags: TagPersonalizado[]): 
 
 export async function obtenerPendientes(usuarioId: string): Promise<Pendientes> {
   const base = await baseLocal();
-  const fila = await base.primera<{ perfil: number; tags: string }>(
-    'SELECT perfil, tags FROM preferencias_pendientes WHERE usuario_id = ?',
+  const fila = await base.primera<{ perfil: number; tags: string; permiso_texto: number }>(
+    'SELECT perfil, tags, permiso_texto FROM preferencias_pendientes WHERE usuario_id = ?',
     [usuarioId]
   );
-  return fila ? { perfil: fila.perfil, tags: JSON.parse(fila.tags) as Record<string, number> } : { perfil: 0, tags: {} };
+  return fila
+    ? { perfil: fila.perfil, tags: JSON.parse(fila.tags) as Record<string, number>, permisoTexto: fila.permiso_texto }
+    : { perfil: 0, tags: {}, permisoTexto: 0 };
 }
 
 export async function guardarPendientes(usuarioId: string, pendientes: Pendientes): Promise<void> {
   const base = await baseLocal();
   await base.ejecutar(
-    `INSERT INTO preferencias_pendientes (usuario_id, perfil, tags) VALUES (?, ?, ?)
-     ON CONFLICT (usuario_id) DO UPDATE SET perfil = excluded.perfil, tags = excluded.tags`,
-    [usuarioId, pendientes.perfil, JSON.stringify(pendientes.tags)]
+    `INSERT INTO preferencias_pendientes (usuario_id, perfil, tags, permiso_texto) VALUES (?, ?, ?, ?)
+     ON CONFLICT (usuario_id) DO UPDATE SET
+       perfil = excluded.perfil, tags = excluded.tags, permiso_texto = excluded.permiso_texto`,
+    [usuarioId, pendientes.perfil, JSON.stringify(pendientes.tags), pendientes.permisoTexto]
   );
 }
 
@@ -152,5 +164,6 @@ function aUsuario(fila: FilaUsuario): Usuario {
     zonaHoraria: fila.zona_horaria,
     bloquesActivos: JSON.parse(fila.bloques_activos) as string[],
     onboardingCompleto: fila.onboarding_completo === 1,
+    analisisTexto: fila.analisis_texto === 1,
   };
 }

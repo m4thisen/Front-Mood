@@ -50,6 +50,13 @@ src/
   dispositivo y después se mandan al servidor. Sin conexión quedan
   pendientes y se reintentan al abrir la app, al volver a ella y antes de
   cerrar sesión (`PreferenciasPendientes`).
+- El texto libre de cada día solo lo lee la IA del servidor si la persona
+  da el permiso: un interruptor en Mi cuenta ("Que la IA lea mis textos"),
+  apagado por defecto. La primera vez que escribe un texto, el formulario
+  del día se lo pregunta una sola vez, sin interrumpir. El permiso viaja
+  aparte del resto del perfil, así un teléfono desactualizado nunca apaga
+  uno que se dio en otro; apagarlo hace que el servidor borre lo que ya
+  leyó la IA.
 - Los textos de la iteración 0 están en español e inglés (`src/i18n`); los
   nuevos se escriben directamente en español.
 
@@ -158,7 +165,9 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
   servidor, historial completo en un teléfono nuevo, pendientes que se
   mandan antes de cerrar sesión y reintentos ante cortes.
   Pendiente: la prueba en un iPhone físico.
-- [ ] Iteración 4 — Visualización y análisis
+- [ ] **Iteración 4 — Núcleo de IA** (en curso, la mayor parte en el
+  servidor): permiso para que la IA lea el texto, en Mi cuenta y en el
+  formulario del día.
 - [ ] Iteración 5 — Música e IA
 - [ ] Iteración 6 — Portabilidad y terminación
 

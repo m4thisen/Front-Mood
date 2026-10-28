@@ -17,6 +17,11 @@ export interface Usuario {
   /** Claves de los bloques de seguimiento activos. Ninguno viene activo por defecto. */
   bloquesActivos: string[];
   onboardingCompleto: boolean;
+  /**
+   * Permiso para que Claude lea el texto libre de cada día (dato sensible,
+   * Ley 25.326). Apagado por defecto: lo da la persona, y lo puede retirar.
+   */
+  analisisTexto: boolean;
 }
 
 export const HORA_RECORDATORIO_POR_DEFECTO = '21:00';

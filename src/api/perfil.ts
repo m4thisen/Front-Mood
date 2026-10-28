@@ -18,6 +18,8 @@ export interface PerfilApi {
   zonaHoraria: string;
   onboardingCompleto: boolean;
   bloques: string[];
+  /** Permiso para que Claude lea el texto libre. */
+  analisisTexto: boolean;
 }
 
 export interface TagApi {
@@ -27,7 +29,10 @@ export interface TagApi {
   activo: boolean;
 }
 
-/** Cuerpo de PATCH /usuarios/me. */
+/**
+ * Cuerpo de PATCH /usuarios/me. El permiso para analizar el texto no va acá:
+ * se manda solo cuando la persona lo cambia (PermisoTextoApi).
+ */
 export interface CambiosPerfilApi {
   nombre?: string;
   fechaNacimiento?: string;
@@ -38,6 +43,11 @@ export interface CambiosPerfilApi {
   zonaHoraria: string;
   bloques: string[];
   onboardingCompleto?: true;
+}
+
+/** PATCH /usuarios/me con el permiso, y nada más. */
+export interface PermisoTextoApi {
+  analisisTexto: boolean;
 }
 
 /**
@@ -72,6 +82,7 @@ export function aUsuario(perfil: PerfilApi): Usuario {
     zonaHoraria: perfil.zonaHoraria,
     bloquesActivos: perfil.bloques,
     onboardingCompleto: perfil.onboardingCompleto,
+    analisisTexto: perfil.analisisTexto,
   };
 }
 

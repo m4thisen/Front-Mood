@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,6 +8,7 @@ import { EncabezadoPantalla, EncabezadoSeccion } from '@/componentes/Encabezados
 import { FilaLista, GrupoLista } from '@/componentes/Lista';
 import { HojaInferior } from '@/componentes/HojaInferior';
 import { EditorTags } from '@/componentes/EditorTags';
+import { EXPLICACION_PERMISO_TEXTO } from '@/componentes/PreguntaPermisoTexto';
 import { Chip } from '@/componentes/Chip';
 import { Boton } from '@/componentes/Boton';
 import { Icono } from '@/componentes/Icono';
@@ -52,6 +53,7 @@ export const CuentaScreen: React.FC = () => {
   const tags = useSesionStore((s) => s.tags);
   const tagsActivos = useTagsActivos();
   const actualizarPreferencias = useSesionStore((s) => s.actualizarPreferencias);
+  const cambiarPermisoTexto = useSesionStore((s) => s.cambiarPermisoTexto);
   const programarRecordatorio = useSesionStore((s) => s.programarRecordatorio);
   const cerrarSesion = useSesionStore((s) => s.cerrarSesion);
   const registros = useListaRegistros();
@@ -107,6 +109,20 @@ export const CuentaScreen: React.FC = () => {
     }
     if (formato === 'csv') await exportarCSV(registros, tags);
     else await exportarPDF(registros, usuario, tags);
+  };
+
+  // Apagarlo borra en el servidor lo que la IA ya leyó: se confirma. Prenderlo no
+  // necesita confirmación: la explicación está debajo del interruptor.
+  const alternarPermisoTexto = (permitido: boolean) => {
+    hapticos.seleccion();
+    if (permitido) {
+      void cambiarPermisoTexto(true);
+      return;
+    }
+    Alert.alert('¿Dejar de compartir tus textos?', 'La IA deja de leer lo que escribís y borramos lo que ya leyó. Tus registros no se tocan.', [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: 'Apagar', style: 'destructive', onPress: () => void cambiarPermisoTexto(false) },
+    ]);
   };
 
   // CU-03: se pide confirmación y se avisa que los datos locales se conservan.
@@ -206,6 +222,24 @@ export const CuentaScreen: React.FC = () => {
           onPress={() => setHoja('tags')}
         />
       </GrupoLista>
+
+      <EncabezadoSeccion titulo="Privacidad" />
+      <GrupoLista>
+        <FilaLista
+          icono="candado"
+          colorIcono="#7C6CF2"
+          titulo="Que la IA lea mis textos"
+          accesorio={
+            <Switch
+              value={usuario?.analisisTexto ?? false}
+              onValueChange={alternarPermisoTexto}
+              trackColor={{ true: colors.accent, false: colors.fill }}
+              accessibilityLabel="Que la IA lea mis textos"
+            />
+          }
+        />
+      </GrupoLista>
+      <Text style={[typography.micro, styles.nota]}>{EXPLICACION_PERMISO_TEXTO}</Text>
 
       <EncabezadoSeccion titulo={t('account.exportData')} />
       <GrupoLista>

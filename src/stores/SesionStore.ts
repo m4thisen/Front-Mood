@@ -27,7 +27,8 @@ import { cargarCuentaDemo, ID_USUARIO_DEMO } from '@/datos/demo';
 /** Por qué no se pudo entrar. */
 export type ErrorIngreso = 'SIN_CONEXION' | 'DEMASIADOS_INTENTOS' | 'NO_SE_PUDO';
 
-type CambiosPreferencias = Partial<Omit<Usuario, 'id'>>;
+/** El permiso para analizar el texto se cambia aparte: cambiarPermisoTexto. */
+type CambiosPreferencias = Partial<Omit<Usuario, 'id' | 'analisisTexto'>>;
 
 interface EstadoSesion {
   cargando: boolean;
@@ -45,6 +46,11 @@ interface EstadoSesion {
    */
   iniciarSesion: (idioma: Idioma, conCuentaDePrueba?: boolean) => Promise<ErrorIngreso | null>;
   actualizarPreferencias: (cambios: CambiosPreferencias) => Promise<void>;
+  /**
+   * Da o retira el permiso para que Claude lea el texto libre. Retirarlo
+   * hace que el servidor borre lo que ya leyó.
+   */
+  cambiarPermisoTexto: (permitido: boolean) => Promise<void>;
   completarOnboarding: () => Promise<void>;
   crearTag: (nombre: string, tipo: TipoTag) => Promise<ErrorTag | null>;
   /** El tipo no se cambia: rompería los valores ya cargados. */
@@ -117,6 +123,15 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
     await UsuarioLocal.guardar(usuario);
     set({ usuario });
     await paraElServidor(usuario.id, (id) => preferencias.marcarPerfil(id));
+  },
+
+  cambiarPermisoTexto: async (permitido) => {
+    const actual = get().usuario;
+    if (!actual || actual.analisisTexto === permitido) return;
+    const usuario = { ...actual, analisisTexto: permitido };
+    await UsuarioLocal.guardar(usuario);
+    set({ usuario });
+    await paraElServidor(usuario.id, (id) => preferencias.marcarPermisoTexto(id));
   },
 
   completarOnboarding: async () => {
@@ -229,6 +244,7 @@ async function paraElServidor(usuarioId: string, anotar: (usuarioId: string) => 
 /**
  * Al entrar, el perfil del servidor manda, salvo que en este teléfono hayan
  * quedado cambios sin enviar de esta misma cuenta: esos ganan y se mandan.
+ * El permiso para analizar el texto se decide aparte, con su propio pendiente.
  */
 async function conPendientesLocales(
   delServidor: Usuario,
@@ -236,7 +252,9 @@ async function conPendientesLocales(
 ): Promise<{ usuario: Usuario; tags: TagPersonalizado[] }> {
   const id = delServidor.id;
   const local = await UsuarioLocal.obtener(id);
-  const usuario = local && (await preferencias.perfilPendiente(id)) ? local : delServidor;
+  const perfil = local && (await preferencias.perfilPendiente(id)) ? local : delServidor;
+  const analisisTexto = local && (await preferencias.permisoTextoPendiente(id)) ? local.analisisTexto : delServidor.analisisTexto;
+  const usuario = { ...perfil, analisisTexto };
 
   const pendientes = new Set(await preferencias.tagsPendientes(id));
   if (pendientes.size === 0) return { usuario, tags: tagsDelServidor };

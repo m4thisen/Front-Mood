@@ -30,6 +30,7 @@ beforeEach(async () => {
     zonaHoraria: 'America/Argentina/Buenos_Aires',
     bloquesActivos: [],
     onboardingCompleto: true,
+    analisisTexto: false,
   });
   servidor = new ServidorFalso();
   sesionDe = ID;

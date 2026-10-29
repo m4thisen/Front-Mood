@@ -8,8 +8,9 @@ import { colors, radius, spacing, typography } from '@/tema';
 /** Lo que se le explica a la persona antes de que dé el permiso: qué se manda, para qué y cómo se retira. */
 export const EXPLICACION_PERMISO_TEXTO =
   'Claude lee el texto de cada día para entender mejor qué te pasó y darte devoluciones más precisas. ' +
-  'Antes de mandarlo le sacamos nombres, mails y teléfonos. No se usa para nada más, y si lo apagás ' +
-  'borramos todo lo que ya leyó.';
+  'Antes de mandarlo le sacamos nombres, mails y teléfonos. Lo que entiende (por ejemplo, "saliste con ' +
+  'amigos") también ayuda a mejorar el modelo, pero tu texto nunca se guarda ahí. Si lo apagás, borramos ' +
+  'todo lo que ya leyó.';
 
 /**
  * Debajo del texto del día, la primera vez que la persona escribe: le pregunta

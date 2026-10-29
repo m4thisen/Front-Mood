@@ -56,7 +56,8 @@ src/
   del día se lo pregunta una sola vez, sin interrumpir. El permiso viaja
   aparte del resto del perfil, así un teléfono desactualizado nunca apaga
   uno que se dio en otro; apagarlo hace que el servidor borre lo que ya
-  leyó la IA.
+  leyó la IA. Lo que entiende la IA (nunca el texto) también entra al
+  reentrenamiento semanal del modelo, y la explicación del permiso lo dice.
 - Los textos de la iteración 0 están en español e inglés (`src/i18n`); los
   nuevos se escriben directamente en español.
 

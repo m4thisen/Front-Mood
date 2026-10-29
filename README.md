@@ -166,9 +166,9 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
   servidor, historial completo en un teléfono nuevo, pendientes que se
   mandan antes de cerrar sesión y reintentos ante cortes.
   Pendiente: la prueba en un iPhone físico.
-- [ ] **Iteración 4 — Núcleo de IA** (en curso, la mayor parte en el
-  servidor): permiso para que la IA lea el texto, en Mi cuenta y en el
-  formulario del día.
+- [x] **Iteración 4 — Núcleo de IA** (la mayor parte en el servidor):
+  permiso para que la IA lea el texto, en Mi cuenta y en el formulario del
+  día.
 - [ ] Iteración 5 — Música e IA
 - [ ] Iteración 6 — Portabilidad y terminación
 

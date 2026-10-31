@@ -13,6 +13,7 @@ import { ID_USUARIO_DEMO } from '@/datos/demo';
 import { colorDelAlma, diasRegistrados, rachaActual, rachaMaxima } from '@/servicios/CalculadoraProgreso';
 import { api } from '@/servicios/conexion';
 import { SyncService } from '@/servicios/SyncService';
+import { useDevolucionStore } from './DevolucionStore';
 import { todayISO } from '@/utils/fecha';
 
 interface EstadoRegistros {
@@ -101,6 +102,8 @@ export const useRegistroStore = create<EstadoRegistros>((set, get) => ({
     if (resultado && (resultado.enviados > 0 || resultado.recibidos > 0) && get().usuarioId === usuarioId) {
       await get().cargar(usuarioId);
     }
+    // El día ya está en el servidor: puede tocar una devolución nueva (CU-19), que se va armando sin esperarla.
+    if (resultado && resultado.enviados > 0 && get().usuarioId === usuarioId) void useDevolucionStore.getState().actualizar();
   },
 
   limpiar: () => {

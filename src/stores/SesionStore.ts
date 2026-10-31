@@ -22,6 +22,7 @@ import * as NotificacionService from '@/servicios/NotificacionService';
 import { api, authService, cuentaDePrueba } from '@/servicios/conexion';
 import { PreferenciasPendientes } from '@/servicios/PreferenciasPendientes';
 import { useRegistroStore } from './RegistroStore';
+import { useDevolucionStore } from './DevolucionStore';
 import { cargarCuentaDemo, ID_USUARIO_DEMO } from '@/datos/demo';
 
 /** Por qué no se pudo entrar. */
@@ -273,6 +274,7 @@ async function cerrarLocal(): Promise<void> {
   await UsuarioLocal.guardarSesionActiva(null);
   await NotificacionService.cancelar().catch(() => undefined);
   useRegistroStore.getState().limpiar();
+  useDevolucionStore.getState().limpiar();
   useSesionStore.setState({ usuario: null, tags: [] });
 }
 
@@ -296,6 +298,7 @@ async function abrirSesion(usuario: Usuario): Promise<void> {
   const tags = await UsuarioLocal.obtenerTags(usuario.id);
   await UsuarioLocal.guardarSesionActiva(usuario.id);
   await useRegistroStore.getState().cargar(usuario.id);
+  await useDevolucionStore.getState().cargar(usuario.id);
   useSesionStore.setState({ usuario, tags });
   // Al abrir la app o entrar en otro teléfono, los avisos quedan al día (sin pedir permiso).
   void useSesionStore.getState().programarRecordatorio();

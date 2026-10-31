@@ -16,7 +16,7 @@ solo de la de abajo.
 ```
 src/
   pantallas/      «frontera»    lo que ve el usuario (Bienvenida, Inicio, Registro, …)
-  stores/         «control»     estado y coordinación (SesionStore, RegistroStore) — Zustand
+  stores/         «control»     estado y coordinación (SesionStore, RegistroStore, DevolucionStore) — Zustand
   servicios/      «servicio»    lógica: MotorEstadistico, CalculadoraProgreso, ExportService, …
   persistencia/   «persistencia» base local SQLite del dispositivo (fuente de verdad)
   api/            comunicación con el servidor (ApiClient); IA y música todavía simuladas
@@ -58,6 +58,15 @@ src/
   uno que se dio en otro; apagarlo hace que el servidor borre lo que ya
   leyó la IA. Lo que entiende la IA (nunca el texto) también entra al
   reentrenamiento semanal del modelo, y la explicación del permiso lo dice.
+- **"Cómo venís"** muestra las devoluciones que escribe la IA en el servidor
+  (`DevolucionStore`, CU-21): la rápida, con lo que suele acompañar a la
+  persona y canciones que se abren en Spotify, y la semanal de los domingos.
+  Se piden al abrir la pantalla y después de sincronizar el día, que es
+  cuando puede tocar una nueva; la última de cada tipo queda guardada en el
+  teléfono para verla sin conexión. Si el texto de hoy tiene señales claras
+  de riesgo, en lugar de la devolución se muestra el mensaje de cuidado del
+  servidor, con los teléfonos de ayuda para llamar con un toque. Cada cuánto
+  llega la rápida se elige en Mi cuenta (1, 3, 7 o 14 días).
 - Los textos de la iteración 0 están en español e inglés (`src/i18n`); los
   nuevos se escriben directamente en español.
 
@@ -169,9 +178,10 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
 - [x] **Iteración 4 — Núcleo de IA** (la mayor parte en el servidor):
   permiso para que la IA lea el texto, en Mi cuenta y en el formulario del
   día.
-- [ ] **Iteración 5 — Música e IA** (en curso): la canción del día se busca
-  en Spotify (a través del servidor) y, si no se puede buscar, se guarda como
-  se escribió; tocándola en el detalle del día se abre en Spotify.
+- [ ] **Iteración 5 — Música e IA** (en curso): "Cómo venís" con las devoluciones
+  reales (rápida y semanal) y el mensaje de cuidado, con copia en el
+  teléfono; la canción del día se busca en Spotify (a través del servidor) y,
+  si no se puede buscar, se guarda como se escribió; tocándola en el detalle
+  del día se abre en Spotify. Falta verla funcionando en el teléfono.
 - [ ] Iteración 6 — Portabilidad y terminación
 
-Las devoluciones de "Cómo venís" todavía se simulan dentro de la app.

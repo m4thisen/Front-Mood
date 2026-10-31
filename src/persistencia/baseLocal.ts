@@ -123,6 +123,16 @@ export const MIGRACIONES: readonly string[] = [
   -- El permiso viaja aparte del resto del perfil: solo cuando se cambia en este teléfono.
   ALTER TABLE preferencias_pendientes ADD COLUMN permiso_texto INTEGER NOT NULL DEFAULT 0;
   `,
+  // Iteración 5: la última devolución de cada tipo, para verla sin conexión (CU-21).
+  `
+  CREATE TABLE devolucion_local (
+    usuario_id TEXT NOT NULL REFERENCES usuario (id) ON DELETE CASCADE,
+    tipo       TEXT NOT NULL CHECK (tipo IN ('rapida', 'semanal')),
+    -- La devolución tal como llegó del servidor (JSON).
+    datos      TEXT NOT NULL,
+    PRIMARY KEY (usuario_id, tipo)
+  ) STRICT;
+  `,
 ];
 
 let instancia: Promise<BaseSQLite> | null = null;

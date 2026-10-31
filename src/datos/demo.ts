@@ -8,7 +8,16 @@
  * tienden a tener mejor ánimo, para que las estadísticas muestren algo.
  */
 import { subDays } from 'date-fns';
-import { Clima, NivelAnimo, RegistroDiario, TagPersonalizado, Usuario, zonaHorariaDelDispositivo } from '@/dominio';
+import {
+  Clima,
+  Devoluciones,
+  NivelAnimo,
+  PatronDevolucion,
+  RegistroDiario,
+  TagPersonalizado,
+  Usuario,
+  zonaHorariaDelDispositivo,
+} from '@/dominio';
 import * as RegistroLocal from '@/persistencia/RegistroLocalRepository';
 import * as UsuarioLocal from '@/persistencia/UsuarioLocalRepository';
 import { toISODate } from '@/utils/fecha';
@@ -92,4 +101,54 @@ export async function cargarCuentaDemo(idioma: 'es' | 'en'): Promise<string> {
 
   await UsuarioLocal.guardarSesionActiva(usuario.id);
   return usuario.id;
+}
+
+/**
+ * Devoluciones de ejemplo para la cuenta demo, que no tiene servidor: una
+ * rápida de ayer y la semanal de la última semana. El texto imita lo que
+ * escribe Claude con los patrones de estos datos (ejercicio, sueño, meditar).
+ */
+export function devolucionesDemo(hoy = new Date()): Devoluciones {
+  const ayer = toISODate(subDays(hoy, 1));
+  const domingo = subDays(hoy, hoy.getDay() === 0 ? 7 : hoy.getDay());
+  const patrones: PatronDevolucion[] = [
+    { marca: 'entreno', nombre: 'entrenar', texto: 'Los días que te movés solés estar bastante mejor que tu media.', efecto: 0.62, dias: 24 },
+    { marca: 'sueno', nombre: 'dormir una hora más que lo habitual', texto: 'Cuando dormís un poco más de lo habitual, solés arrancar mejor.', efecto: 0.31, dias: 52 },
+    { marca: `tag.${TAG_MEDITE.id}`, nombre: `«${TAG_MEDITE.nombre}»`, texto: 'Los días con «Medité» también suelen encontrarte algo mejor.', efecto: 0.24, dias: 15 },
+  ];
+  return {
+    rapida: {
+      id: 'demo-devolucion-rapida',
+      tipo: 'rapida',
+      desde: ayer,
+      hasta: ayer,
+      generadaEn: new Date(`${ayer}T22:00:00`).toISOString(),
+      titulo: 'Un buen día, con el cuerpo en movimiento',
+      resumen:
+        'Ayer estuviste bien, un poco mejor que lo habitual. Lo que más parece haber sumado fue moverte y haber dormido bien. La semana viene pareja, en tu tono de siempre.',
+      patrones,
+      manana: null,
+      sugerencia: 'Si podés, reservate un rato para moverte también hoy, aunque sea una caminata corta.',
+      canciones: [
+        { spotifyId: '', titulo: 'Here Comes the Sun', artista: 'The Beatles', portadaUrl: null },
+        { spotifyId: '', titulo: 'Gracias a la vida', artista: 'Mercedes Sosa', portadaUrl: null },
+        { spotifyId: '', titulo: 'Lovely Day', artista: 'Bill Withers', portadaUrl: null },
+      ],
+    },
+    semanal: {
+      id: 'demo-devolucion-semanal',
+      tipo: 'semanal',
+      desde: toISODate(subDays(domingo, 6)),
+      hasta: toISODate(domingo),
+      generadaEn: domingo.toISOString(),
+      titulo: 'Una semana pareja, con buenos ratos',
+      resumen:
+        'Fue una semana bastante pareja, como siempre. Los mejores días coincidieron con los que te moviste, y el más flojo fue uno en que dormiste poco.',
+      patrones: patrones.slice(0, 2),
+      manana: null,
+      sugerencia: 'Esta semana probá sumar una salida a moverte más, en el día que suele costarte.',
+      canciones: [],
+    },
+    cuidado: null,
+  };
 }

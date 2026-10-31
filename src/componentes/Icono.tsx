@@ -79,6 +79,9 @@ const ICONOS = {
   ia: { ios: 'sparkles', android: 'auto_awesome' },
   habito: { ios: 'leaf', iosRelleno: 'leaf.fill', android: 'eco' },
   musica: { ios: 'music.note.list', android: 'queue_music' },
+  sugerencia: { ios: 'lightbulb', iosRelleno: 'lightbulb.fill', android: 'lightbulb' },
+  cuidado: { ios: 'heart.circle', iosRelleno: 'heart.circle.fill', android: 'favorite' },
+  telefono: { ios: 'phone', iosRelleno: 'phone.fill', android: 'call' },
 
   // Mi cuenta
   idioma: { ios: 'globe', android: 'language' },

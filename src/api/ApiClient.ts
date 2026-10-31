@@ -36,6 +36,8 @@ export class ErrorApi extends Error {
 interface OpcionesPedido {
   /** Rutas sin sesión (/auth/*): no llevan token ni se reintentan. */
   publico?: boolean;
+  /** Para lo que tarda más que lo normal (una devolución que escribe la IA). */
+  tiempoMaximoMs?: number;
 }
 
 type Metodo = 'GET' | 'POST' | 'PATCH';
@@ -63,28 +65,33 @@ export class ApiClient {
     return this.pedir<T>('PATCH', ruta, cuerpo, {});
   }
 
-  private async pedir<T>(metodo: Metodo, ruta: string, cuerpo: unknown, { publico = false }: OpcionesPedido): Promise<T> {
-    if (publico) return this.leer<T>(await this.enviar(metodo, ruta, cuerpo, null));
+  private async pedir<T>(
+    metodo: Metodo,
+    ruta: string,
+    cuerpo: unknown,
+    { publico = false, tiempoMaximoMs = this.tiempoMaximoMs }: OpcionesPedido
+  ): Promise<T> {
+    if (publico) return this.leer<T>(await this.enviar(metodo, ruta, cuerpo, null, tiempoMaximoMs));
 
     const token = await this.sesion.tokenAcceso();
     if (!token) throw new ErrorApi('SESION_PERDIDA', null);
 
-    const respuesta = await this.enviar(metodo, ruta, cuerpo, token);
+    const respuesta = await this.enviar(metodo, ruta, cuerpo, token, tiempoMaximoMs);
     if (respuesta.status !== 401) return this.leer<T>(respuesta);
 
     // Token vencido (o inválido): uno nuevo y un único reintento.
     const nuevo = await this.sesion.renovar(token);
     if (!nuevo) throw new ErrorApi('SESION_PERDIDA', 401);
-    return this.leer<T>(await this.enviar(metodo, ruta, cuerpo, nuevo));
+    return this.leer<T>(await this.enviar(metodo, ruta, cuerpo, nuevo, tiempoMaximoMs));
   }
 
-  private async enviar(metodo: Metodo, ruta: string, cuerpo: unknown, token: string | null): Promise<Response> {
+  private async enviar(metodo: Metodo, ruta: string, cuerpo: unknown, token: string | null, tiempoMaximoMs: number): Promise<Response> {
     const encabezados: Record<string, string> = { Accept: 'application/json' };
     if (cuerpo !== undefined) encabezados['Content-Type'] = 'application/json';
     this.adjuntarToken(encabezados, token);
 
     const corte = new AbortController();
-    const temporizador = setTimeout(() => corte.abort(), this.tiempoMaximoMs);
+    const temporizador = setTimeout(() => corte.abort(), tiempoMaximoMs);
     try {
       return await this.pedirHttp(`${this.urlBase}${ruta}`, {
         method: metodo,

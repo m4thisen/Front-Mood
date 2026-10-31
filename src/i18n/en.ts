@@ -236,24 +236,9 @@ const en: Record<string, string> = {
   'dayDetail.weather': 'Weather',
   'dayDetail.loggedAt': 'Logged at {hora}',
 
-  'ai.summaryTitle': 'Your check-in',
-  'ai.badgeShort': 'AI · simulated',
-  'ai.privacy': 'Built from aggregated data about your days. Your notes never leave your phone.',
-  'ai.noData': 'Log a few more days so the AI can put together a summary.',
-  'ai.genericTag': 'what you logged',
-  'ai.template.improving':
-    'Your mood this week is better than last week — average {avg}/5. Looks like {tag} is doing you good.',
-  'ai.template.declining':
-    'Your mood dipped a bit compared to last week — average {avg}/5. Keep an eye on the days you log {tag}.',
-  'ai.template.stable':
-    'Your mood stayed steady this week, averaging {avg}/5. You kept logging {tag} often.',
-  'ai.template.streak': "You're on a {streak}-day streak — keep it up!",
+  'ai.privacy': 'Written by AI from what the app worked out about your days. It never sees your name.',
 
   'ai.playlistsTitle': 'Music for right now',
-
-  'ai.habitsTitle': 'Habits to keep up',
-  'ai.habits.genericReason': 'Log it for a few days and you\'ll start seeing how it affects you.',
-  'ai.habits.correlationReason': 'Your mood was above your average on those days.',
 
   'today.favoriteToggle': 'Highlight this day',
   'today.favoriteToggleOn': 'Highlighted day',

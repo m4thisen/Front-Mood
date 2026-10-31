@@ -33,3 +33,31 @@ export const ICONOS_CLIMA: Record<Clima, NombreIcono> = {
   FRIO: 'climaFrio',
   CALOR: 'climaCalor',
 };
+
+/**
+ * Ícono de algo que suele acompañar a la persona (un patrón de la
+ * devolución), según su marca: "et.descanso.dormiBien", "clima.LLUVIA",
+ * "tag.<id>", "entreno"…
+ */
+export function iconoDeMarca(marca: string): NombreIcono {
+  if (marca === 'entreno') return 'ejercicio';
+  if (marca === 'sueno') return 'sueno';
+  const [tipo, ...resto] = marca.split('.');
+  const valor = resto.join('.');
+  switch (tipo) {
+    case 'et':
+      return iconoDeEtiqueta(valor);
+    case 'clima':
+      return ICONOS_CLIMA[valor as Clima] ?? 'climaNublado';
+    case 'tag':
+      return 'tag';
+    case 'dia':
+      return 'calendario';
+    case 'ev':
+    case 'previa':
+    case 'res':
+      return 'bloqueEventos';
+    default:
+      return 'habito';
+  }
+}

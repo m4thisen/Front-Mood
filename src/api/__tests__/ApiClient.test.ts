@@ -103,4 +103,23 @@ describe('ApiClient', () => {
     );
     await expect(lento.api.get('/tags')).rejects.toMatchObject({ codigo: 'SIN_CONEXION' });
   });
+
+  it('un pedido puede esperar más que el resto (una devolución que escribe la IA)', async () => {
+    let resolver: (r: Response) => void = () => {};
+    const { api } = armar(
+      (_url, init) =>
+        new Promise<Response>((ok, rechazar) => {
+          resolver = ok;
+          init.signal?.addEventListener('abort', () => rechazar(new Error('abortado')));
+        }),
+      {},
+      20
+    );
+
+    const pedido = api.post('/devoluciones/actual', undefined, { tiempoMaximoMs: 1000 });
+    await new Promise((listo) => setTimeout(listo, 60));
+    resolver({ status: 200, ok: true, json: async () => ({ rapida: null }) } as Response);
+
+    await expect(pedido).resolves.toEqual({ rapida: null });
+  });
 });

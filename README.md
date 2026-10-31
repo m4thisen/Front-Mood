@@ -75,8 +75,11 @@ src/
   día con lo que se registró).
 - Las animaciones de entrada comparten estilo (`componentes/animaciones`) y
   se saltean si el teléfono tiene activado "Reducir movimiento".
-- Los textos de la iteración 0 están en español e inglés (`src/i18n`); los
-  nuevos se escriben directamente en español.
+- Todos los textos están en español e inglés (`src/i18n`), también el informe
+  PDF, el CSV y la notificación diaria; las fechas siguen el orden de cada
+  idioma (`formatearFecha`). Un test controla que los dos diccionarios tengan
+  las mismas claves y las mismas marcas. Las devoluciones las escribe el
+  servidor en el idioma de la app.
 
 ## Diseño
 
@@ -193,7 +196,7 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
   del día se abre en Spotify. Pendiente: la prueba en un iPhone físico.
 - [x] **Iteración 6 — Portabilidad y terminación**: historial en CSV legible
   y en PDF como informe para un profesional, animaciones de entrada y la
-  regla de RN-08 (3 días) para relacionar hábitos y ánimo. La revisión de
-  traducciones quedó fuera: los textos nuevos van solo en español.
+  regla de RN-08 (3 días) para relacionar hábitos y ánimo, y revisión de
+  traducciones: todo en español e inglés.
   Pendiente: la prueba en un iPhone físico.
 

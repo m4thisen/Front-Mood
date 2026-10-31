@@ -3,7 +3,6 @@ import { Alert, AppState, Modal, Pressable, ScrollView, StyleSheet, Text, TextIn
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format, parseISO } from 'date-fns';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { EncabezadoPantalla, EncabezadoSeccion } from '@/componentes/Encabezados';
 import { EscalaAnimo } from '@/componentes/EscalaAnimo';
@@ -37,7 +36,7 @@ import {
   RANGO_MINUTOS_EJERCICIO,
   RegistroDiario,
 } from '@/dominio';
-import { dateLocale, todayISO } from '@/utils/fecha';
+import { formatearFecha, todayISO } from '@/utils/fecha';
 import { hapticos } from '@/utils/hapticos';
 
 const MENSAJES_ERROR: Partial<Record<ErrorValidacion, string>> = {
@@ -200,11 +199,11 @@ export const RegistroScreen: React.FC = () => {
       setGuardando(false);
       hapticos.error();
       Alert.alert(
-        'No se pudo guardar',
-        'Hubo un problema al guardar en el teléfono, por ejemplo falta de espacio. Lo que cargaste sigue en pantalla.',
+        t('today.saveErrorTitle'),
+        t('today.saveErrorBody'),
         [
           { text: t('common.cancel'), style: 'cancel' },
-          { text: 'Reintentar', onPress: () => void handleGuardar() },
+          { text: t('common.retry'), onPress: () => void handleGuardar() },
         ]
       );
       return;
@@ -214,8 +213,8 @@ export const RegistroScreen: React.FC = () => {
     if (resultado.includes('DIA_TERMINADO')) {
       hapticos.error();
       Alert.alert(
-        'Ese día ya terminó',
-        'Pasó la medianoche y los días anteriores no se pueden modificar. El formulario ahora es para hoy.'
+        t('today.dayEndedTitle'),
+        t('today.dayEndedBody')
       );
       setFecha(todayISO());
       rellenar(useRegistroStore.getState().registros[todayISO()] ?? null);
@@ -235,7 +234,7 @@ export const RegistroScreen: React.FC = () => {
     navigation.navigate('Inicio');
   };
 
-  const fechaTitulo = format(parseISO(fecha), "EEEE d 'de' MMMM", { locale: dateLocale(language) });
+  const fechaTitulo = formatearFecha(fecha, 'diaLargo', language);
   const mensajeRango = [...errores].map((e) => MENSAJES_ERROR[e]).find(Boolean);
 
   const pie = (
@@ -363,7 +362,7 @@ export const RegistroScreen: React.FC = () => {
         valor={cancion}
         onCambio={setCancion}
         buscar={buscarCancion}
-        placeholder="Buscá la canción del día"
+        placeholder={t('today.songPlaceholder')}
         alMostrarResultados={mostrarArribaDelTeclado}
       />
 

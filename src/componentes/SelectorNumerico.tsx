@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icono, NombreIcono } from './Icono';
 import { colors, radius, spacing, typography } from '@/tema';
 import { hapticos } from '@/utils/hapticos';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   /** null = todavía no se cargó (el dato es opcional). */
@@ -42,6 +43,7 @@ export const SelectorNumerico: React.FC<Props> = ({
   vacio,
   invalido = false,
 }) => {
+  const { t } = useTranslation();
   const cambiar = (direccion: 1 | -1) => {
     hapticos.seleccion();
     if (valor === null) return onCambio(inicial);
@@ -55,13 +57,13 @@ export const SelectorNumerico: React.FC<Props> = ({
         <Icono nombre={icono} tamano={15} color={colors.textTertiary} />
         <Text style={[typography.footnote, styles.titulo]}>{titulo}</Text>
         {valor !== null && (
-          <Pressable onPress={() => onCambio(null)} hitSlop={10} accessibilityLabel={`Borrar ${titulo}`}>
+          <Pressable onPress={() => onCambio(null)} hitSlop={10} accessibilityLabel={t('stepper.clear').replace('{titulo}', titulo)}>
             <Icono nombre="cerrar" tamano={11} color={colors.textTertiary} peso="bold" />
           </Pressable>
         )}
       </View>
       <View style={styles.fila}>
-        <BotonPaso icono="menos" onPress={() => cambiar(-1)} etiqueta={`Menos ${titulo}`} />
+        <BotonPaso icono="menos" onPress={() => cambiar(-1)} etiqueta={t('stepper.less').replace('{titulo}', titulo)} />
         {valor === null ? (
           <Text style={[typography.footnote, styles.vacio]}>{vacio}</Text>
         ) : (
@@ -70,7 +72,7 @@ export const SelectorNumerico: React.FC<Props> = ({
             <Text style={[typography.footnote, styles.unidad]}> {unidad}</Text>
           </Text>
         )}
-        <BotonPaso icono="agregar" onPress={() => cambiar(1)} etiqueta={`Más ${titulo}`} />
+        <BotonPaso icono="agregar" onPress={() => cambiar(1)} etiqueta={t('stepper.more').replace('{titulo}', titulo)} />
       </View>
     </View>
   );

@@ -7,14 +7,17 @@
  * No depende de nada nativo: se puede probar y mirar fuera del teléfono.
  */
 import { differenceInCalendarDays, format, getDay, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Clima, NIVELES_ANIMO, NivelAnimo, RegistroDiario, TagPersonalizado, Usuario, enlaceSpotify } from '@/dominio';
+import { Clima, Idioma, NIVELES_ANIMO, NivelAnimo, RegistroDiario, TagPersonalizado, Usuario, enlaceSpotify } from '@/dominio';
 import { moodScale } from '@/tema/colors';
+import { dateLocale, formatearFecha, unDecimal } from '@/utils/fecha';
 import { rachaMaxima } from './CalculadoraProgreso';
 import { animoSegunHabito, distribucion, FranjaHoraria, franjaHoraria, MINIMO_DIAS_HABITO, promedio } from './MotorEstadistico';
 
-/** Los nombres que ve la persona, en su idioma (salen de i18n). */
+/** El idioma y los textos que ve la persona (salen de i18n). */
 export interface TextosInforme {
+  idioma: Idioma;
+  /** Traduce una clave del diccionario ("report.summary"). */
+  t: (clave: string) => string;
   animo: (nivel: NivelAnimo) => string;
   clima: (clima: Clima) => string;
   etiqueta: (clave: string) => string;
@@ -26,10 +29,11 @@ const MAXIMO_HABITOS = 8;
 const HUECO_GRAFICO = 3;
 
 const ordenar = (registros: RegistroDiario[]) => [...registros].sort((a, b) => a.fecha.localeCompare(b.fecha));
-const decimal = (valor: number) => valor.toFixed(1).replace('.', ',');
 const capitalizar = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1);
-const fechaLarga = (fecha: string) => format(parseISO(fecha), "d 'de' MMMM 'de' yyyy", { locale: es });
-const diaConSemana = (fecha: string) => capitalizar(format(parseISO(fecha), "EEEE d 'de' MMMM", { locale: es }));
+
+/** Un texto del diccionario con sus marcas completadas: tx(textos, 'report.dayCount', { n: 3 }). */
+const tx = (textos: TextosInforme, clave: string, valores: Record<string, string | number> = {}) =>
+  Object.entries(valores).reduce((texto, [marca, valor]) => texto.replaceAll(`{${marca}}`, String(valor)), textos.t(clave));
 
 /** Los tags propios del día: los de sí/no por su nombre, los de texto con lo que escribió. */
 function tagsDelDia(registro: RegistroDiario, tags: TagPersonalizado[]): string[] {
@@ -58,30 +62,14 @@ const celdaCsv = (valor: string | number | null): string => {
  * internas). Empieza con la marca BOM para que Excel lea bien las tildes.
  */
 export function armarCsv(registros: RegistroDiario[], tags: TagPersonalizado[], textos: TextosInforme): string {
-  const encabezado = [
-    'fecha',
-    'dia_semana',
-    'nivel_animo',
-    'animo',
-    'destacado',
-    'horas_sueno',
-    'minutos_ejercicio',
-    'clima',
-    'etiquetas',
-    'tags_propios',
-    'cancion',
-    'artista',
-    'enlace_spotify',
-    'texto',
-    'hora_de_carga',
-  ];
+  const encabezado = textos.t('report.csvHeader');
   const filas = ordenar(registros).map((r) =>
     [
       r.fecha,
-      format(parseISO(r.fecha), 'EEEE', { locale: es }),
+      format(parseISO(r.fecha), 'EEEE', { locale: dateLocale(textos.idioma) }),
       r.nivelAnimo,
       textos.animo(r.nivelAnimo),
-      r.destacado ? 'sí' : 'no',
+      r.destacado ? textos.t('report.yes') : textos.t('report.no'),
       r.horasSueno,
       r.minutosEjercicio,
       r.climas.map(textos.clima).join('; '),
@@ -96,7 +84,7 @@ export function armarCsv(registros: RegistroDiario[], tags: TagPersonalizado[], 
       .map(celdaCsv)
       .join(',')
   );
-  return '﻿' + [encabezado.join(','), ...filas].join('\r\n') + '\r\n';
+  return '\uFEFF' + [encabezado, ...filas].join('\r\n') + '\r\n';
 }
 
 // ---------------------------------------------------------------------------
@@ -144,16 +132,16 @@ function grafico(registros: RegistroDiario[], textos: TextosInforme): string {
     .map((r) => `<circle cx="${x(r.fecha)}" cy="${y(r.nivelAnimo)}" r="4.5" fill="${colorDe(r.nivelAnimo)}" stroke="#FFFFFF" stroke-width="1.5" />`)
     .join('');
   const fechas =
-    `<text x="${izquierda}" y="${alto - 6}" font-size="11" fill="#5B6478">${html(format(parseISO(primero), 'd MMM', { locale: es }))}</text>` +
+    `<text x="${izquierda}" y="${alto - 6}" font-size="11" fill="#5B6478">${html(formatearFecha(primero, 'diaMes', textos.idioma))}</text>` +
     (registros.length > 1
-      ? `<text x="${ancho - derecha}" y="${alto - 6}" text-anchor="end" font-size="11" fill="#5B6478">${html(format(parseISO(ultimo), 'd MMM', { locale: es }))}</text>`
+      ? `<text x="${ancho - derecha}" y="${alto - 6}" text-anchor="end" font-size="11" fill="#5B6478">${html(formatearFecha(ultimo, 'diaMes', textos.idioma))}</text>`
       : '');
 
-  return `<svg viewBox="0 0 ${ancho} ${alto}" width="100%" role="img" aria-label="Ánimo día por día">${guias}${lineas}${puntos}${fechas}</svg>`;
+  return `<svg viewBox="0 0 ${ancho} ${alto}" width="100%" role="img" aria-label="${html(textos.t('report.chartLabel'))}">${guias}${lineas}${puntos}${fechas}</svg>`;
 }
 
 /** Un calendario por mes, de lunes a domingo, con cada día del color de su ánimo. */
-function calendarios(registros: RegistroDiario[]): string {
+function calendarios(registros: RegistroDiario[], textos: TextosInforme): string {
   const porFecha = new Map(registros.map((r) => [r.fecha, r]));
   const meses = [...new Set(registros.map((r) => r.fecha.slice(0, 7)))];
   return meses
@@ -172,12 +160,12 @@ function calendarios(registros: RegistroDiario[]): string {
       ];
       const semanas: string[] = [];
       for (let i = 0; i < celdas.length; i += 7) semanas.push(`<tr>${celdas.slice(i, i + 7).join('')}</tr>`);
-      const titulo = capitalizar(format(new Date(anio, numero - 1, 1), "MMMM 'de' yyyy", { locale: es }));
+      const titulo = capitalizar(formatearFecha(new Date(anio, numero - 1, 1), 'mesAnio', textos.idioma));
       return `
         <div class="mes">
           <div class="titulo-mes">${html(titulo)}</div>
           <table class="calendario">
-            <thead><tr>${['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<th>${d}</th>`).join('')}</tr></thead>
+            <thead><tr>${textos.t('report.weekdays').split(',').map((d) => `<th>${html(d)}</th>`).join('')}</tr></thead>
             <tbody>${semanas.join('')}</tbody>
           </table>
         </div>`;
@@ -189,9 +177,9 @@ function diaPorDia(registros: RegistroDiario[], tags: TagPersonalizado[], textos
   return registros
     .map((r) => {
       const datos = [
-        r.horasSueno !== null ? `Sueño: ${decimal(r.horasSueno).replace(',0', '')} h` : null,
-        r.minutosEjercicio !== null ? `Ejercicio: ${r.minutosEjercicio} min` : null,
-        r.climas.length > 0 ? `Clima: ${r.climas.map(textos.clima).join(', ')}` : null,
+        r.horasSueno !== null ? tx(textos, 'report.sleep', { horas: unDecimal(r.horasSueno, textos.idioma).replace(/[.,]0$/, '') }) : null,
+        r.minutosEjercicio !== null ? tx(textos, 'report.exercise', { minutos: r.minutosEjercicio }) : null,
+        r.climas.length > 0 ? tx(textos, 'report.weather', { clima: r.climas.map(textos.clima).join(', ') }) : null,
       ].filter(Boolean);
       const marcado = [...r.etiquetas.map(textos.etiqueta), ...tagsDelDia(r, tags)];
       const cancion = r.cancion ? [r.cancion.titulo, r.cancion.artista].filter(Boolean).join(' — ') : null;
@@ -199,13 +187,13 @@ function diaPorDia(registros: RegistroDiario[], tags: TagPersonalizado[], textos
         <div class="registro">
           <div class="cabecera-dia">
             <span class="punto" style="background:${colorDe(r.nivelAnimo)}"></span>
-            <strong>${html(diaConSemana(r.fecha))}</strong>
+            <strong>${html(capitalizar(formatearFecha(r.fecha, 'diaLargo', textos.idioma)))}</strong>
             <span class="animo">${html(textos.animo(r.nivelAnimo))}</span>
-            ${r.destacado ? '<span class="destacado">Día destacado</span>' : ''}
+            ${r.destacado ? `<span class="destacado">${html(textos.t('report.highlighted'))}</span>` : ''}
           </div>
           ${datos.length > 0 ? `<div class="datos">${html(datos.join(' · '))}</div>` : ''}
           ${marcado.length > 0 ? `<div class="marcado">${html(marcado.join(', '))}</div>` : ''}
-          ${cancion ? `<div class="datos">Canción: ${html(cancion)}</div>` : ''}
+          ${cancion ? `<div class="datos">${html(tx(textos, 'report.song', { cancion }))}</div>` : ''}
           ${r.texto.trim() ? `<blockquote>${html(r.texto.trim()).replace(/\r?\n/g, '<br />')}</blockquote>` : ''}
         </div>`;
     })
@@ -231,6 +219,8 @@ export function armarInformeHtml({ registros: sinOrdenar, usuario, tags, textos,
   const registros = ordenar(sinOrdenar);
   const total = registros.length;
   const nombre = usuario?.nombre.trim() ?? '';
+  const fechaLarga = (fecha: string) => formatearFecha(fecha, 'fechaLarga', textos.idioma);
+  const titulo = nombre ? tx(textos, 'report.titleOf', { nombre }) : textos.t('report.title');
   const promedioAnimo = promedio(registros);
   const porNivel = distribucion(registros);
   const franja = franjaHoraria(registros);
@@ -239,17 +229,20 @@ export function armarInformeHtml({ registros: sinOrdenar, usuario, tags, textos,
     total === 0
       ? ''
       : registros[0]!.fecha === registros.at(-1)!.fecha
-        ? `El ${fechaLarga(registros[0]!.fecha)}`
-        : `Del ${fechaLarga(registros[0]!.fecha)} al ${fechaLarga(registros.at(-1)!.fecha)}`;
+        ? tx(textos, 'report.periodOne', { fecha: fechaLarga(registros[0]!.fecha) })
+        : tx(textos, 'report.periodRange', { desde: fechaLarga(registros[0]!.fecha), hasta: fechaLarga(registros.at(-1)!.fecha) });
 
   const resumen = [
-    { valor: String(total), etiqueta: total === 1 ? 'día registrado' : 'días registrados' },
+    { valor: String(total), etiqueta: textos.t(total === 1 ? 'report.dayLogged' : 'report.daysLogged') },
     {
-      valor: promedioAnimo === null ? '—' : `${decimal(promedioAnimo)} de 5`,
-      etiqueta: promedioAnimo === null ? 'ánimo promedio' : `ánimo promedio (${textos.animo(Math.round(promedioAnimo) as NivelAnimo).toLowerCase()})`,
+      valor: promedioAnimo === null ? '—' : tx(textos, 'report.outOf5', { valor: unDecimal(promedioAnimo, textos.idioma) }),
+      etiqueta:
+        promedioAnimo === null
+          ? textos.t('report.average')
+          : tx(textos, 'report.averageWith', { animo: textos.animo(Math.round(promedioAnimo) as NivelAnimo).toLowerCase() }),
     },
-    { valor: `${rachaMaxima(registros)}`, etiqueta: 'días seguidos, como máximo' },
-    { valor: franja ? textos.franja(franja) : '—', etiqueta: 'momento en que suele registrar' },
+    { valor: `${rachaMaxima(registros)}`, etiqueta: textos.t('report.longestStreak') },
+    { valor: franja ? textos.franja(franja) : '—', etiqueta: textos.t('report.usualTime') },
   ]
     .map((t) => `<div class="tile"><div class="valor">${html(t.valor)}</div><div class="etiqueta">${html(t.etiqueta)}</div></div>`)
     .join('');
@@ -263,37 +256,37 @@ export function armarInformeHtml({ registros: sinOrdenar, usuario, tags, textos,
         <tr>
           <td class="nivel"><span class="punto" style="background:${colorDe(nivel)}"></span>${html(textos.animo(nivel))}</td>
           <td class="pista"><div class="barra" style="width:${porcentaje}%;background:${colorDe(nivel)}"></div></td>
-          <td class="cifra">${cantidad} ${cantidad === 1 ? 'día' : 'días'} · ${porcentaje}%</td>
+          <td class="cifra">${html(tx(textos, cantidad === 1 ? 'report.dayCountOne' : 'report.dayCount', { n: cantidad }))} · ${porcentaje}%</td>
         </tr>`;
     })
     .join('');
 
   const tablaHabitos =
     habitos.length === 0
-      ? `<p class="nota">Todavía no hay hábitos con al menos ${MINIMO_DIAS_HABITO} días registrados para compararlos con el ánimo.</p>`
+      ? `<p class="nota">${html(tx(textos, 'report.habitsNone', { minimo: MINIMO_DIAS_HABITO }))}</p>`
       : `
         <table class="tabla">
-          <thead><tr><th>Lo que marcó</th><th>Días</th><th>Ánimo esos días</th><th>Frente a su promedio</th></tr></thead>
+          <thead><tr>${['report.habitColumn', 'report.daysColumn', 'report.moodThoseDays', 'report.vsAverage'].map((c) => `<th>${html(textos.t(c))}</th>`).join('')}</tr></thead>
           <tbody>${habitos
             .map(
               (h) => `
               <tr>
                 <td>${html(textos.etiqueta(h.clave))}</td>
                 <td>${h.dias}</td>
-                <td>${decimal(h.conHabito)} de 5</td>
+                <td>${html(tx(textos, 'report.outOf5', { valor: unDecimal(h.conHabito, textos.idioma) }))}</td>
                 <td class="${h.variacion >= 0 ? 'sube' : 'baja'}">${h.variacion >= 0 ? '+' : '−'}${Math.round(Math.abs(h.variacion))}%</td>
               </tr>`
             )
             .join('')}</tbody>
         </table>
-        <p class="nota">Muestra qué acompaña a los mejores y peores días, no qué los causa. Solo aparecen los hábitos con al menos ${MINIMO_DIAS_HABITO} días.</p>`;
+        <p class="nota">${html(tx(textos, 'report.habitsNote', { minimo: MINIMO_DIAS_HABITO }))}</p>`;
 
   return `<!doctype html>
-<html lang="es">
+<html lang="${textos.idioma}">
 <head>
 <meta charset="utf-8" />
 <meta name="color-scheme" content="light" />
-<title>Mood · Historial${nombre ? ` de ${html(nombre)}` : ''}</title>
+<title>Mood · ${html(titulo)}</title>
 <style>
   @page { size: A4; margin: 16mm 14mm; }
   /* Al imprimir, iOS saca los fondos si no se le pide: sin esto no salen las barras ni los colores del calendario. */
@@ -342,35 +335,35 @@ export function armarInformeHtml({ registros: sinOrdenar, usuario, tags, textos,
 </style>
 </head>
 <body>
-  <div class="marca">Mood · Diario emocional</div>
-  <h1>Historial${nombre ? ` de ${html(nombre)}` : ''}</h1>
-  <p class="periodo">${html(periodo)}${periodo ? ' · ' : ''}exportado el ${html(fechaLarga(format(hoy, 'yyyy-MM-dd')))}</p>
-  <div class="aviso">Es un registro personal hecho en la app Mood: cómo estuvo cada día y qué lo acompañó, contado por la propia persona. No es un diagnóstico ni reemplaza la evaluación de un profesional.</div>
+  <div class="marca">${html(textos.t('report.brand'))}</div>
+  <h1>${html(titulo)}</h1>
+  <p class="periodo">${html(periodo)}${periodo ? ' · ' : ''}${html(tx(textos, 'report.exportedOn', { fecha: fechaLarga(format(hoy, 'yyyy-MM-dd')) }))}</p>
+  <div class="aviso">${html(textos.t('report.disclaimer'))}</div>
 
   ${
     total === 0
-      ? '<p class="nota">No hay días registrados.</p>'
+      ? `<p class="nota">${html(textos.t('report.empty'))}</p>`
       : `
-  <div class="seccion"><h2>Resumen</h2>
+  <div class="seccion"><h2>${html(textos.t('report.summary'))}</h2>
   <div class="tiles">${resumen}</div></div>
 
-  <div class="seccion"><h2>Cómo se repartieron los días</h2>
+  <div class="seccion"><h2>${html(textos.t('report.distribution'))}</h2>
   <table class="reparto">${reparto}</table></div>
 
-  <div class="seccion"><h2>El ánimo en el tiempo</h2>
+  <div class="seccion"><h2>${html(textos.t('report.overTime'))}</h2>
   ${grafico(registros, textos)}</div>
 
-  <div class="seccion"><h2>Calendario</h2>
-  <div class="meses">${calendarios(registros)}</div></div>
+  <div class="seccion"><h2>${html(textos.t('report.calendar'))}</h2>
+  <div class="meses">${calendarios(registros, textos)}</div></div>
 
-  <div class="seccion"><h2>Los hábitos y el ánimo</h2>
+  <div class="seccion"><h2>${html(textos.t('report.habits'))}</h2>
   ${tablaHabitos}</div>
 
-  <h2>Día por día</h2>
+  <h2>${html(textos.t('report.dayByDay'))}</h2>
   ${diaPorDia(registros, tags, textos)}`
   }
 
-  <div class="pie">Generado en el teléfono con la app Mood. Los datos no pasaron por ningún servidor para armar este informe.</div>
+  <div class="pie">${html(textos.t('report.footer'))}</div>
 </body>
 </html>`;
 }

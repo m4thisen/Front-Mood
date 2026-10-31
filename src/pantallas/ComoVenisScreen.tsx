@@ -2,7 +2,6 @@ import React, { useCallback } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
-import { format, parseISO } from 'date-fns';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { EncabezadoPantalla, EncabezadoSeccion } from '@/componentes/Encabezados';
 import { TarjetaDevolucion } from '@/componentes/TarjetaDevolucion';
@@ -17,7 +16,7 @@ import { useTranslation } from '@/i18n';
 import { Devolucion } from '@/dominio';
 import { useDevolucionStore } from '@/stores/DevolucionStore';
 import { useIndicadoresProgreso, useRegistroStore } from '@/stores/RegistroStore';
-import { dateLocale, todayISO } from '@/utils/fecha';
+import { formatearFecha, todayISO } from '@/utils/fecha';
 
 /**
  * "Cómo venís" (CU-21): las devoluciones que escribe la IA. Primero se ve la
@@ -45,11 +44,15 @@ export const ComoVenisScreen: React.FC = () => {
     }, [actualizar])
   );
 
-  const locale = dateLocale(language);
-  const dia = (fecha: string) => format(parseISO(fecha), "EEEE d 'de' MMMM", { locale });
-  const cuandoRapida = (d: Devolucion) => (d.hasta === hoy ? 'Hoy' : d.desde === d.hasta ? `Del ${dia(d.hasta)}` : `Del ${dia(d.desde)} al ${dia(d.hasta)}`);
-  const cuandoSemanal = (d: Devolucion) =>
-    `Del ${format(parseISO(d.desde), 'EEEE d', { locale })} al ${format(parseISO(d.hasta), "EEEE d 'de' MMMM", { locale })}`;
+  const dia = (fecha: string) => formatearFecha(fecha, 'diaLargo', language);
+  const periodo = (desde: string, hasta: string) => t('howYouAre.fromTo').replace('{desde}', desde).replace('{hasta}', hasta);
+  const cuandoRapida = (d: Devolucion) =>
+    d.hasta === hoy
+      ? t('common.today')
+      : d.desde === d.hasta
+        ? t('howYouAre.fromDay').replace('{dia}', dia(d.hasta))
+        : periodo(dia(d.desde), dia(d.hasta));
+  const cuandoSemanal = (d: Devolucion) => periodo(formatearFecha(d.desde, 'diaCorto', language), dia(d.hasta));
 
   // Hay un registro de hoy más nuevo que la devolución: la que se ve puede no ser la última.
   const actualizando = pedido === 'pidiendo' && !!registroDeHoy && rapida?.hasta !== hoy;
@@ -58,7 +61,7 @@ export const ComoVenisScreen: React.FC = () => {
     <ScreenContainer scroll contentStyle={[styles.content, { paddingBottom: altoBarra + spacing.xl }]}>
       <EncabezadoPantalla
         titulo={t('howYouAre.title')}
-        antetitulo={cuidado ? 'Hoy' : rapida?.hasta === hoy ? t('howYouAre.subtitle') : 'Tu última devolución'}
+        antetitulo={cuidado ? t('common.today') : rapida?.hasta === hoy ? t('howYouAre.subtitle') : t('howYouAre.lastOne')}
       />
 
       {cuidado ? (
@@ -67,7 +70,7 @@ export const ComoVenisScreen: React.FC = () => {
         </Animated.View>
       ) : (
         <>
-          {actualizando && rapida && <Aviso icono="ia" texto="Armando la devolución de hoy…" cargando arriba />}
+          {actualizando && rapida && <Aviso icono="ia" texto={t('howYouAre.updating')} cargando arriba />}
 
           {rapida ? (
             // Con la clave, una devolución nueva entra de nuevo en lugar de cambiar de golpe.
@@ -80,7 +83,7 @@ export const ComoVenisScreen: React.FC = () => {
 
           {rapida && rapida.patrones.length > 0 && (
             <Animated.View key={`patrones-${rapida.id}`} entering={entrada(1)}>
-              <EncabezadoSeccion titulo="Lo que te viene acompañando" />
+              <EncabezadoSeccion titulo={t('howYouAre.patternsTitle')} />
               <PatronesDevolucion patrones={rapida.patrones} />
             </Animated.View>
           )}
@@ -94,7 +97,7 @@ export const ComoVenisScreen: React.FC = () => {
 
           {semanal ? (
             <Animated.View key={semanal.id} entering={entrada(3)}>
-              <EncabezadoSeccion titulo="Tu semana" />
+              <EncabezadoSeccion titulo={t('howYouAre.weekTitle')} />
               <TarjetaDevolucion devolucion={semanal} cuando={cuandoSemanal(semanal)} />
             </Animated.View>
           ) : (
@@ -102,7 +105,7 @@ export const ComoVenisScreen: React.FC = () => {
           )}
 
           {pedido === 'sinConexion' && (rapida || semanal) && (
-            <Aviso icono="ia" texto="Sin conexión: estás viendo la última devolución que se guardó en el teléfono." />
+            <Aviso icono="ia" texto={t('howYouAre.offlineCached')} />
           )}
 
           <View style={styles.privacidad}>
@@ -117,12 +120,13 @@ export const ComoVenisScreen: React.FC = () => {
 
 /** Todavía no hay devolución rápida: por qué, y qué la destraba. */
 const SinDevolucion: React.FC<{ pedido: string; registroDeHoy: boolean }> = ({ pedido, registroDeHoy }) => {
+  const { t } = useTranslation();
   let texto: string;
-  if (pedido === 'pidiendo') texto = 'Armando tu devolución…';
-  else if (!registroDeHoy) texto = 'Registrá cómo estuvo tu día y te armamos tu devolución.';
-  else if (pedido === 'sinConexion') texto = 'Sin conexión: tu devolución llega cuando vuelvas a tener internet.';
-  else if (pedido === 'error') texto = 'No pudimos armar tu devolución ahora. Probá de nuevo en un rato.';
-  else texto = 'Todavía no hay una devolución para hoy.';
+  if (pedido === 'pidiendo') texto = t('howYouAre.building');
+  else if (!registroDeHoy) texto = t('howYouAre.logToday');
+  else if (pedido === 'sinConexion') texto = t('howYouAre.offline');
+  else if (pedido === 'error') texto = t('howYouAre.error');
+  else texto = t('howYouAre.noneToday');
   return (
     <View style={styles.vacia}>
       {pedido === 'pidiendo' ? (

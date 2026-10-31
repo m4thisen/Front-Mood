@@ -123,6 +123,11 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
     const usuario = { ...actual, ...cambios };
     await UsuarioLocal.guardar(usuario);
     set({ usuario });
+    if (cambios.idioma && cambios.idioma !== actual.idioma) {
+      // Los avisos ya programados quedaron en el idioma anterior; el ejemplo de la cuenta demo, también.
+      void get().programarRecordatorio();
+      if (usuario.id === ID_USUARIO_DEMO) void useDevolucionStore.getState().cargar(usuario.id, usuario.idioma);
+    }
     await paraElServidor(usuario.id, (id) => preferencias.marcarPerfil(id));
   },
 
@@ -205,6 +210,7 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
     const registrados = Object.keys(useRegistroStore.getState().registros);
     const programado = await NotificacionService.programarRecordatorio(usuario.horaRecordatorio, registrados, {
       pedirPermiso,
+      idioma: usuario.idioma,
     });
     // CU-13, E1: si tenía permiso y ya no, se avisa una sola vez.
     if (programado) {
@@ -298,7 +304,7 @@ async function abrirSesion(usuario: Usuario): Promise<void> {
   const tags = await UsuarioLocal.obtenerTags(usuario.id);
   await UsuarioLocal.guardarSesionActiva(usuario.id);
   await useRegistroStore.getState().cargar(usuario.id);
-  await useDevolucionStore.getState().cargar(usuario.id);
+  await useDevolucionStore.getState().cargar(usuario.id, usuario.idioma);
   useSesionStore.setState({ usuario, tags });
   // Al abrir la app o entrar en otro teléfono, los avisos quedan al día (sin pedir permiso).
   void useSesionStore.getState().programarRecordatorio();

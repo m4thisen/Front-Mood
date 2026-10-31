@@ -11,7 +11,8 @@
  */
 import * as Notifications from 'expo-notifications';
 import { addDays, startOfDay } from 'date-fns';
-import { partesHora } from '@/dominio';
+import { Idioma, partesHora } from '@/dominio';
+import { traducir } from '@/i18n';
 import { toISODate } from '@/utils/fecha';
 
 /** iOS admite hasta 64 avisos programados por app; dos semanas alcanzan de sobra. */
@@ -19,9 +20,6 @@ export const DIAS_PROGRAMADOS = 14;
 
 /** Pantalla que abre el aviso al tocarlo (CU-13, paso 5). */
 export const PANTALLA_DEL_AVISO = 'Registro';
-
-const TITULO = '¿Cómo estuvo tu día?';
-const CUERPO = 'Tomate un minuto para registrarlo.';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -66,7 +64,7 @@ let enCurso: Promise<unknown> = Promise.resolve();
 export function programarRecordatorio(
   hora: string,
   diasRegistrados: Iterable<string> = [],
-  { pedirPermiso = true }: { pedirPermiso?: boolean } = {}
+  { pedirPermiso = true, idioma = 'es' }: { pedirPermiso?: boolean; idioma?: Idioma } = {}
 ): Promise<boolean> {
   // De a una: dos reprogramaciones simultáneas podrían duplicar avisos.
   const resultado = enCurso.then(async () => {
@@ -79,7 +77,8 @@ export function programarRecordatorio(
       await Notifications.cancelAllScheduledNotificationsAsync();
       for (const momento of proximosAvisos(hora, new Date(), diasRegistrados)) {
         await Notifications.scheduleNotificationAsync({
-          content: { title: TITULO, body: CUERPO, data: { pantalla: PANTALLA_DEL_AVISO } },
+          // En el idioma de la persona: al cambiarlo se reprograma (SesionStore.actualizarPreferencias).
+          content: { title: traducir(idioma, 'reminder.title'), body: traducir(idioma, 'reminder.body'), data: { pantalla: PANTALLA_DEL_AVISO } },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: momento },
         });
       }

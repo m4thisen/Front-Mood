@@ -7,6 +7,7 @@ import { colors, radius, spacing, typography } from '@/tema';
 import { Cancion, LARGO_MAXIMO_CANCION } from '@/dominio';
 import { MINIMO_LETRAS_BUSQUEDA } from '@/servicios/MusicaService';
 import { hapticos } from '@/utils/hapticos';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   valor: Cancion | null;
@@ -29,6 +30,7 @@ type Estado = 'quieto' | 'buscando' | 'listo' | 'sinResultados' | 'sinBusqueda';
  * guarda tal como se escribió: el registro nunca depende de Spotify.
  */
 export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, placeholder, alMostrarResultados }) => {
+  const { t } = useTranslation();
   const [texto, setTexto] = useState(valor && !valor.spotifyId ? valor.titulo : '');
   const [resultados, setResultados] = useState<Cancion[]>([]);
   const [estado, setEstado] = useState<Estado>('quieto');
@@ -103,7 +105,7 @@ export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, plac
             {valor.artista}
           </Text>
         </View>
-        <Pressable onPress={quitar} hitSlop={12} accessibilityRole="button" accessibilityLabel="Quitar la canción">
+        <Pressable onPress={quitar} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('song.remove')}>
           <Icono nombre="cerrar" tamano={14} color={colors.textTertiary} peso="semibold" />
         </Pressable>
       </Animated.View>
@@ -134,7 +136,7 @@ export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, plac
               onPress={() => elegir(cancion)}
               style={({ pressed }) => [styles.resultado, i > 0 && styles.separador, pressed && styles.presionado]}
               accessibilityRole="button"
-              accessibilityLabel={`${cancion.titulo}, de ${cancion.artista}`}
+              accessibilityLabel={t('song.byArtist').replace('{titulo}', cancion.titulo).replace('{artista}', cancion.artista)}
             >
               <Portada url={cancion.portadaUrl} />
               <View style={styles.datos}>
@@ -150,10 +152,10 @@ export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, plac
         </Animated.View>
       )}
       {estado === 'sinResultados' && (
-        <Text style={[typography.footnote, styles.aviso]}>No la encontramos en Spotify: se guarda como la escribiste.</Text>
+        <Text style={[typography.footnote, styles.aviso]}>{t('song.notFound')}</Text>
       )}
       {estado === 'sinBusqueda' && (
-        <Text style={[typography.footnote, styles.aviso]}>Ahora no se puede buscar en Spotify: se guarda como la escribiste.</Text>
+        <Text style={[typography.footnote, styles.aviso]}>{t('song.searchUnavailable')}</Text>
       )}
     </View>
   );

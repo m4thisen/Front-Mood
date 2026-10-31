@@ -1,15 +1,21 @@
 import { describe, expect, it } from '@jest/globals';
-import { Clima, NivelAnimo, TagPersonalizado, Usuario } from '@/dominio';
+import { Idioma, TagPersonalizado, Usuario } from '@/dominio';
 import { registro } from '@/__pruebas__/fabricas';
+import { claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
+import { traducir } from '@/i18n';
 import { armarCsv, armarInformeHtml, TextosInforme } from '../InformeHistorial';
 import { MINIMO_DIAS_HABITO } from '../MotorEstadistico';
 
-const textos: TextosInforme = {
-  animo: (n: NivelAnimo) => ['Muy mal', 'Mal', 'Neutral', 'Bien', 'Genial'][n - 1]!,
-  clima: (c: Clima) => ({ SOLEADO: 'Soleado', NUBLADO: 'Nublado', LLUVIA: 'Lluvia', FRIO: 'Frío', CALOR: 'Calor' })[c],
-  etiqueta: (clave: string) => ({ 'ejercicio.corri': 'Corrí', 'gente.saliConAmigos': 'Salí con amigos' })[clave] ?? clave,
-  franja: () => 'noche',
-};
+/** Los mismos textos que arma Mi cuenta, con los diccionarios de verdad. */
+const textosEn = (idioma: Idioma): TextosInforme => ({
+  idioma,
+  t: (clave) => traducir(idioma, clave),
+  animo: (nivel) => traducir(idioma, `mood.${nivel}`),
+  clima: (clima) => traducir(idioma, `weather.${clima}`),
+  etiqueta: (clave) => traducir(idioma, claveTraduccionEtiqueta(clave)),
+  franja: (franja) => traducir(idioma, `stats.bucket.${franja}`).toLowerCase(),
+});
+const textos = textosEn('es');
 const tags: TagPersonalizado[] = [
   { id: 'tag-1', nombre: 'Medité', tipo: 'SI_NO', activo: true },
   { id: 'tag-2', nombre: 'Con quién', tipo: 'TEXTO', activo: true },
@@ -85,6 +91,24 @@ describe('InformeHistorial · informe para el PDF', () => {
     expect(informe).toContain('Canción: Gracias a la vida — Mercedes Sosa');
     expect(informe).toContain('Sueño: 5,5 h · Clima: Lluvia');
     expect(informe).toContain('Dormí poco, &quot;muy&quot; mal.<br />Mañana sigo.');
+  });
+
+  it('en inglés, todo el informe sale en inglés: títulos, fechas, ánimos y lo marcado', () => {
+    const enIngles = armarInformeHtml({ registros, usuario: lucia, tags, textos: textosEn('en'), hoy: new Date('2026-10-31T12:00:00') });
+    expect(enIngles).toContain('<html lang="en">');
+    expect(enIngles).toContain('History of Lucía');
+    expect(enIngles).toContain('From October 10, 2026 to October 12, 2026');
+    expect(enIngles).toContain('Saturday, October 10');
+    expect(enIngles).toContain('It is not a diagnosis');
+    expect(enIngles).toContain('Sleep: 5.5 h · Weather: Rain');
+    expect(enIngles).toContain('Highlighted day');
+    for (const enEspanol of ['Historial', 'Día por día', 'de octubre', 'Sueño:', 'Resumen']) expect(enIngles).not.toContain(enEspanol);
+  });
+
+  it('el CSV en inglés usa columnas y nombres en inglés', () => {
+    const csv = armarCsv(registros, tags, textosEn('en'));
+    expect(csv).toContain('date,weekday,mood_level,mood');
+    expect(csv).toContain('2026-10-10,Saturday,4,Good,yes');
   });
 
   it('sin registros no se rompe', () => {

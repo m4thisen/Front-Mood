@@ -7,6 +7,7 @@ import { Alert, Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { PANTALLA_DEL_AVISO } from '@/servicios/NotificacionService';
 import { useSesionStore } from '@/stores/SesionStore';
+import { useTranslation } from '@/i18n';
 import { navegacion } from './referencia';
 
 /**
@@ -31,16 +32,17 @@ export function AbrirDesdeRecordatorio({ navegacionLista }: { navegacionLista: b
 export function AvisoPermisoRecordatorio() {
   const sinPermiso = useSesionStore((s) => s.recordatorioSinPermiso);
   const descartar = useSesionStore((s) => s.descartarAvisoPermiso);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!sinPermiso) return;
     Alert.alert(
-      'El recordatorio está apagado',
-      'Se quitó el permiso de notificaciones, así que el recordatorio diario no va a sonar. Podés volver a activarlo desde Ajustes.',
+      t('reminder.offTitle'),
+      t('reminder.offBody'),
       [
-        { text: 'Ahora no', style: 'cancel', onPress: descartar },
+        { text: t('common.notNow'), style: 'cancel', onPress: descartar },
         {
-          text: 'Abrir Ajustes',
+          text: t('reminder.openSettings'),
           onPress: () => {
             descartar();
             void Linking.openSettings();

@@ -5,6 +5,19 @@ import en from './en';
 
 const dictionaries: Record<Idioma, Record<string, string>> = { es, en };
 
+/** El idioma que se ve ahora en la app, para lo que no es una pantalla (avisos, diálogos del sistema). */
+let idiomaVisible: Idioma = 'es';
+export const idiomaActual = (): Idioma => idiomaVisible;
+
+/**
+ * Traduce fuera de las pantallas (servicios, notificaciones). Los valores
+ * reemplazan sus marcas: traducir('en', 'stepper.more', { titulo: 'Sueño' }).
+ */
+export function traducir(idioma: Idioma, clave: string, valores: Record<string, string | number> = {}): string {
+  const texto = dictionaries[idioma][clave] ?? dictionaries.es[clave] ?? clave;
+  return Object.entries(valores).reduce((resultado, [marca, valor]) => resultado.replaceAll(`{${marca}}`, String(valor)), texto);
+}
+
 interface I18nContextValue {
   language: Idioma;
   setLanguage: (lang: Idioma) => void;
@@ -18,6 +31,7 @@ export const I18nProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ initialLanguage = 'es', children }) => {
   const [language, setLanguage] = useState<Idioma>(initialLanguage);
+  idiomaVisible = language;
 
   const t = useCallback(
     (key: string) => dictionaries[language][key] ?? dictionaries.es[key] ?? key,

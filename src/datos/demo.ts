@@ -11,6 +11,7 @@ import { subDays } from 'date-fns';
 import {
   Clima,
   Devoluciones,
+  Idioma,
   NivelAnimo,
   PatronDevolucion,
   RegistroDiario,
@@ -103,18 +104,58 @@ export async function cargarCuentaDemo(idioma: 'es' | 'en'): Promise<string> {
   return usuario.id;
 }
 
+/** Los textos del ejemplo, en cada idioma. */
+const TEXTOS_DEMO = {
+  es: {
+    entrenar: { nombre: 'entrenar', texto: 'Los días que te movés solés estar bastante mejor que tu media.' },
+    sueno: { nombre: 'dormir una hora más que lo habitual', texto: 'Cuando dormís un poco más de lo habitual, solés arrancar mejor.' },
+    medite: 'Los días con «Medité» también suelen encontrarte algo mejor.',
+    rapida: {
+      titulo: 'Un buen día, con el cuerpo en movimiento',
+      resumen:
+        'Ayer estuviste bien, un poco mejor que lo habitual. Lo que más parece haber sumado fue moverte y haber dormido bien. La semana viene pareja, en tu tono de siempre.',
+      sugerencia: 'Si podés, reservate un rato para moverte también hoy, aunque sea una caminata corta.',
+    },
+    semanal: {
+      titulo: 'Una semana pareja, con buenos ratos',
+      resumen:
+        'Fue una semana bastante pareja, como siempre. Los mejores días coincidieron con los que te moviste, y el más flojo fue uno en que dormiste poco.',
+      sugerencia: 'Esta semana probá sumar una salida a moverte más, en el día que suele costarte.',
+    },
+  },
+  en: {
+    entrenar: { nombre: 'working out', texto: 'On days you move, you tend to feel quite a bit better than usual.' },
+    sueno: { nombre: 'sleeping an hour more than usual', texto: 'When you sleep a little more than usual, you tend to start the day better.' },
+    medite: 'Days with «Medité» also tend to find you a bit better.',
+    rapida: {
+      titulo: 'A good day, with your body on the move',
+      resumen:
+        'Yesterday you felt good, a little better than usual. What seems to have helped most was moving and sleeping well. Your week is steady, in your usual tone.',
+      sugerencia: 'If you can, set aside some time to move today too, even a short walk.',
+    },
+    semanal: {
+      titulo: 'A steady week, with good moments',
+      resumen:
+        'It was a fairly steady week, as usual. Your best days matched the ones you moved, and the lowest one was a day you slept little.',
+      sugerencia: 'This week, try adding one more outing to move, on the day that tends to be harder.',
+    },
+  },
+} as const;
+
 /**
  * Devoluciones de ejemplo para la cuenta demo, que no tiene servidor: una
- * rápida de ayer y la semanal de la última semana. El texto imita lo que
- * escribe Claude con los patrones de estos datos (ejercicio, sueño, meditar).
+ * rápida de ayer y la semanal de la última semana, en el idioma de la cuenta.
+ * El texto imita lo que escribe Claude con los patrones de estos datos
+ * (ejercicio, sueño, meditar).
  */
-export function devolucionesDemo(hoy = new Date()): Devoluciones {
+export function devolucionesDemo(idioma: Idioma = 'es', hoy = new Date()): Devoluciones {
+  const textos = TEXTOS_DEMO[idioma];
   const ayer = toISODate(subDays(hoy, 1));
   const domingo = subDays(hoy, hoy.getDay() === 0 ? 7 : hoy.getDay());
   const patrones: PatronDevolucion[] = [
-    { marca: 'entreno', nombre: 'entrenar', texto: 'Los días que te movés solés estar bastante mejor que tu media.', efecto: 0.62, dias: 24 },
-    { marca: 'sueno', nombre: 'dormir una hora más que lo habitual', texto: 'Cuando dormís un poco más de lo habitual, solés arrancar mejor.', efecto: 0.31, dias: 52 },
-    { marca: `tag.${TAG_MEDITE.id}`, nombre: `«${TAG_MEDITE.nombre}»`, texto: 'Los días con «Medité» también suelen encontrarte algo mejor.', efecto: 0.24, dias: 15 },
+    { marca: 'entreno', ...textos.entrenar, efecto: 0.62, dias: 24 },
+    { marca: 'sueno', ...textos.sueno, efecto: 0.31, dias: 52 },
+    { marca: `tag.${TAG_MEDITE.id}`, nombre: `«${TAG_MEDITE.nombre}»`, texto: textos.medite, efecto: 0.24, dias: 15 },
   ];
   return {
     rapida: {
@@ -123,12 +164,9 @@ export function devolucionesDemo(hoy = new Date()): Devoluciones {
       desde: ayer,
       hasta: ayer,
       generadaEn: new Date(`${ayer}T22:00:00`).toISOString(),
-      titulo: 'Un buen día, con el cuerpo en movimiento',
-      resumen:
-        'Ayer estuviste bien, un poco mejor que lo habitual. Lo que más parece haber sumado fue moverte y haber dormido bien. La semana viene pareja, en tu tono de siempre.',
+      ...textos.rapida,
       patrones,
       manana: null,
-      sugerencia: 'Si podés, reservate un rato para moverte también hoy, aunque sea una caminata corta.',
       canciones: [
         { spotifyId: '', titulo: 'Here Comes the Sun', artista: 'The Beatles', portadaUrl: null },
         { spotifyId: '', titulo: 'Gracias a la vida', artista: 'Mercedes Sosa', portadaUrl: null },
@@ -141,12 +179,9 @@ export function devolucionesDemo(hoy = new Date()): Devoluciones {
       desde: toISODate(subDays(domingo, 6)),
       hasta: toISODate(domingo),
       generadaEn: domingo.toISOString(),
-      titulo: 'Una semana pareja, con buenos ratos',
-      resumen:
-        'Fue una semana bastante pareja, como siempre. Los mejores días coincidieron con los que te moviste, y el más flojo fue uno en que dormiste poco.',
+      ...textos.semanal,
       patrones: patrones.slice(0, 2),
       manana: null,
-      sugerencia: 'Esta semana probá sumar una salida a moverte más, en el día que suele costarte.',
       canciones: [],
     },
     cuidado: null,

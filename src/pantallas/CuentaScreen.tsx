@@ -8,7 +8,6 @@ import { EncabezadoPantalla, EncabezadoSeccion } from '@/componentes/Encabezados
 import { FilaLista, GrupoLista } from '@/componentes/Lista';
 import { HojaInferior } from '@/componentes/HojaInferior';
 import { EditorTags } from '@/componentes/EditorTags';
-import { EXPLICACION_PERMISO_TEXTO } from '@/componentes/PreguntaPermisoTexto';
 import { Chip } from '@/componentes/Chip';
 import { Boton } from '@/componentes/Boton';
 import { Icono } from '@/componentes/Icono';
@@ -109,6 +108,8 @@ export const CuentaScreen: React.FC = () => {
       return;
     }
     const textos: TextosInforme = {
+      idioma: language,
+      t,
       animo: (nivel) => t(`mood.${nivel}`),
       clima: (clima) => t(`weather.${clima}`),
       etiqueta: (clave) => t(claveTraduccionEtiqueta(clave)),
@@ -118,7 +119,7 @@ export const CuentaScreen: React.FC = () => {
       if (formato === 'csv') await exportarCSV(registros, tags, textos);
       else await exportarPDF(registros, usuario, tags, textos);
     } catch {
-      Alert.alert(t('account.exportData'), 'No se pudo armar el archivo. Probá de nuevo en un rato.');
+      Alert.alert(t('account.exportData'), t('account.exportError'));
     }
   };
 
@@ -130,9 +131,9 @@ export const CuentaScreen: React.FC = () => {
       void cambiarPermisoTexto(true);
       return;
     }
-    Alert.alert('¿Dejar de compartir tus textos?', 'La IA deja de leer lo que escribís y borramos lo que ya leyó. Tus registros no se tocan.', [
+    Alert.alert(t('privacy.turnOffTitle'), t('privacy.turnOffBody'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: 'Apagar', style: 'destructive', onPress: () => void cambiarPermisoTexto(false) },
+      { text: t('privacy.turnOff'), style: 'destructive', onPress: () => void cambiarPermisoTexto(false) },
     ]);
   };
 
@@ -234,23 +235,23 @@ export const CuentaScreen: React.FC = () => {
         />
       </GrupoLista>
 
-      <EncabezadoSeccion titulo="Privacidad" />
+      <EncabezadoSeccion titulo={t('privacy.title')} />
       <GrupoLista>
         <FilaLista
           icono="candado"
           colorIcono="#7C6CF2"
-          titulo="Que la IA lea mis textos"
+          titulo={t('privacy.toggle')}
           accesorio={
             <Switch
               value={usuario?.analisisTexto ?? false}
               onValueChange={alternarPermisoTexto}
               trackColor={{ true: colors.accent, false: colors.fill }}
-              accessibilityLabel="Que la IA lea mis textos"
+              accessibilityLabel={t('privacy.toggle')}
             />
           }
         />
       </GrupoLista>
-      <Text style={[typography.micro, styles.nota]}>{EXPLICACION_PERMISO_TEXTO}</Text>
+      <Text style={[typography.micro, styles.nota]}>{t('privacy.explanation')}</Text>
 
       <EncabezadoSeccion titulo={t('account.exportData')} />
       <GrupoLista>

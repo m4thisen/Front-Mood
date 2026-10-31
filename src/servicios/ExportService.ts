@@ -11,11 +11,11 @@ import * as Sharing from 'expo-sharing';
 import { RegistroDiario, TagPersonalizado, Usuario } from '@/dominio';
 import { armarCsv, armarInformeHtml, TextosInforme } from './InformeHistorial';
 
-/** "mood-historial-2026-10-31": se entiende qué es al recibirlo. */
-const nombreArchivo = () => `mood-historial-${format(new Date(), 'yyyy-MM-dd')}`;
+/** "mood-historial-2026-10-31" (o "mood-history-…" en inglés): se entiende qué es al recibirlo. */
+const nombreArchivo = (textos: TextosInforme) => `${textos.t('report.fileName')}-${format(new Date(), 'yyyy-MM-dd')}`;
 
 export async function exportarCSV(registros: RegistroDiario[], tags: TagPersonalizado[], textos: TextosInforme): Promise<void> {
-  const archivo = new File(Paths.cache, `${nombreArchivo()}.csv`);
+  const archivo = new File(Paths.cache, `${nombreArchivo(textos)}.csv`);
   archivo.create({ overwrite: true });
   archivo.write(armarCsv(registros, tags, textos));
   if (await Sharing.isAvailableAsync()) {
@@ -31,7 +31,7 @@ export async function exportarPDF(
 ): Promise<void> {
   const { uri } = await Print.printToFileAsync({ html: armarInformeHtml({ registros, usuario, tags, textos }) });
   // Print lo guarda con un nombre al azar: se copia con uno que diga qué es.
-  const destino = new File(Paths.cache, `${nombreArchivo()}.pdf`);
+  const destino = new File(Paths.cache, `${nombreArchivo(textos)}.pdf`);
   if (destino.exists) destino.delete();
   new File(uri).move(destino);
   if (await Sharing.isAvailableAsync()) {

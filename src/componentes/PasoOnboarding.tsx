@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { BotonIcono } from './Encabezados';
 import { colors, radius, spacing, typography } from '@/tema';
+import { useTranslation } from '@/i18n';
 
 export const TOTAL_PASOS = 4;
 
@@ -22,38 +23,41 @@ interface Props {
  * Esqueleto común de los pasos del onboarding (CU-04): progreso arriba,
  * título grande, contenido y la acción principal siempre a mano abajo.
  */
-export const PasoOnboarding: React.FC<Props> = ({ paso, titulo, subtitulo, onAtras, children, pie }) => (
-  <SafeAreaView style={styles.pantalla}>
-    <View style={styles.barraSuperior}>
-      <View style={styles.espacioAtras}>
-        {onAtras && <BotonIcono icono="atras" etiqueta="Atrás" onPress={onAtras} tamano={34} />}
+export const PasoOnboarding: React.FC<Props> = ({ paso, titulo, subtitulo, onAtras, children, pie }) => {
+  const { t } = useTranslation();
+  return (
+    <SafeAreaView style={styles.pantalla}>
+      <View style={styles.barraSuperior}>
+        <View style={styles.espacioAtras}>
+          {onAtras && <BotonIcono icono="atras" etiqueta={t('common.back')} onPress={onAtras} tamano={34} />}
+        </View>
+        <View style={styles.progreso} accessibilityLabel={t('onboarding.stepOf').replace('{paso}', String(paso + 1)).replace('{total}', String(TOTAL_PASOS))}>
+          {Array.from({ length: TOTAL_PASOS }, (_, i) => (
+            <View key={i} style={[styles.segmento, i <= paso && styles.segmentoActivo]} />
+          ))}
+        </View>
+        <View style={styles.espacioAtras} />
       </View>
-      <View style={styles.progreso} accessibilityLabel={`Paso ${paso + 1} de ${TOTAL_PASOS}`}>
-        {Array.from({ length: TOTAL_PASOS }, (_, i) => (
-          <View key={i} style={[styles.segmento, i <= paso && styles.segmentoActivo]} />
-        ))}
-      </View>
-      <View style={styles.espacioAtras} />
-    </View>
 
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerStyle={styles.contenido}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View entering={FadeInDown.duration(380)}>
-          <Text style={[typography.displayL, styles.titulo]}>{titulo}</Text>
-          {subtitulo && <Text style={[typography.body, styles.subtitulo]}>{subtitulo}</Text>}
-        </Animated.View>
-        <Animated.View entering={FadeInDown.delay(80).duration(380)}>{children}</Animated.View>
-      </ScrollView>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={styles.contenido}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View entering={FadeInDown.duration(380)}>
+            <Text style={[typography.displayL, styles.titulo]}>{titulo}</Text>
+            {subtitulo && <Text style={[typography.body, styles.subtitulo]}>{subtitulo}</Text>}
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(80).duration(380)}>{children}</Animated.View>
+        </ScrollView>
 
-      <View style={styles.pie}>{pie}</View>
-    </KeyboardAvoidingView>
-  </SafeAreaView>
-);
+        <View style={styles.pie}>{pie}</View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   flex: {

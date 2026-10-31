@@ -6,7 +6,7 @@
  */
 import { create } from 'zustand';
 import { ErrorApi } from '@/api/ApiClient';
-import { Devoluciones, SIN_DEVOLUCIONES } from '@/dominio';
+import { Devoluciones, Idioma, SIN_DEVOLUCIONES } from '@/dominio';
 import { devolucionesDemo, ID_USUARIO_DEMO } from '@/datos/demo';
 import * as DevolucionLocal from '@/persistencia/DevolucionLocalRepository';
 import { api } from '@/servicios/conexion';
@@ -18,8 +18,8 @@ export type EstadoPedido = 'quieto' | 'pidiendo' | 'sinConexion' | 'error';
 interface EstadoDevoluciones extends Devoluciones {
   usuarioId: string | null;
   pedido: EstadoPedido;
-  /** Las guardadas en el teléfono, al entrar. */
-  cargar: (usuarioId: string) => Promise<void>;
+  /** Las guardadas en el teléfono, al entrar. El idioma es para el ejemplo de la cuenta demo. */
+  cargar: (usuarioId: string, idioma?: Idioma) => Promise<void>;
   /** Pide las vigentes al servidor. Si ya hay un pedido en curso, espera ese. */
   actualizar: () => Promise<void>;
   limpiar: () => void;
@@ -33,9 +33,9 @@ export const useDevolucionStore = create<EstadoDevoluciones>((set, get) => ({
   usuarioId: null,
   pedido: 'quieto',
 
-  cargar: async (usuarioId) => {
+  cargar: async (usuarioId, idioma = 'es') => {
     if (usuarioId === ID_USUARIO_DEMO) {
-      set({ ...devolucionesDemo(), usuarioId, pedido: 'quieto' });
+      set({ ...devolucionesDemo(idioma), usuarioId, pedido: 'quieto' });
       return;
     }
     set({ ...SIN_DEVOLUCIONES, usuarioId, pedido: 'quieto' });

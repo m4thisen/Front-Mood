@@ -3,6 +3,7 @@ import {
   endOfMonth,
   endOfWeek,
   format,
+  parseISO,
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
@@ -14,6 +15,31 @@ export const toISODate = (date: Date): string => format(date, 'yyyy-MM-dd');
 export const todayISO = (): string => toISODate(new Date());
 
 export const dateLocale = (lang: Idioma) => (lang === 'es' ? es : enUS);
+
+/**
+ * Cada idioma ordena la fecha a su modo: "sábado 31 de octubre" y
+ * "Saturday, October 31". Con un formato único, en inglés salía
+ * "Saturday 31 de October".
+ */
+const FORMATOS = {
+  diaLargo: { es: "EEEE d 'de' MMMM", en: 'EEEE, MMMM d' },
+  diaCorto: { es: 'EEEE d', en: 'EEEE d' },
+  fechaLarga: { es: "d 'de' MMMM 'de' yyyy", en: 'MMMM d, yyyy' },
+  mesAnio: { es: "MMMM 'de' yyyy", en: 'MMMM yyyy' },
+  diaMes: { es: 'd MMM', en: 'MMM d' },
+} as const;
+
+export type FormatoFecha = keyof typeof FORMATOS;
+
+/** Una fecha (Date o "yyyy-mm-dd") en el formato y el idioma pedidos. */
+export const formatearFecha = (fecha: Date | string, formato: FormatoFecha, lang: Idioma): string =>
+  format(typeof fecha === 'string' ? parseISO(fecha) : fecha, FORMATOS[formato][lang], { locale: dateLocale(lang) });
+
+/** Un número con un decimal, con la coma o el punto de cada idioma. */
+export const unDecimal = (valor: number, lang: Idioma): string => {
+  const texto = valor.toFixed(1);
+  return lang === 'es' ? texto.replace('.', ',') : texto;
+};
 
 /**
  * Locale para los selectores nativos de fecha y hora. En iOS es lo que

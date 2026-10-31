@@ -3,6 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icono } from './Icono';
 import { colors, radius, spacing, typography } from '@/tema';
 import { MensajeCuidado } from '@/dominio';
+import { useTranslation } from '@/i18n';
 
 /**
  * El mensaje de cuidado: va en lugar de la devolución cuando lo que escribió
@@ -10,39 +11,42 @@ import { MensajeCuidado } from '@/dominio';
  * IA) y llega del servidor, con los teléfonos verificados. Cada línea se
  * llama con un toque.
  */
-export const TarjetaCuidado: React.FC<{ cuidado: MensajeCuidado }> = ({ cuidado }) => (
-  <View style={styles.tarjeta}>
-    <View style={styles.cuadroIcono}>
-      <Icono nombre="cuidado" tamano={22} color={colors.accentStrong} relleno />
-    </View>
-    <Text style={[typography.title, styles.titulo]}>{cuidado.titulo}</Text>
-    <Text style={[typography.body, styles.mensaje]}>{cuidado.mensaje}</Text>
+export const TarjetaCuidado: React.FC<{ cuidado: MensajeCuidado }> = ({ cuidado }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.tarjeta}>
+      <View style={styles.cuadroIcono}>
+        <Icono nombre="cuidado" tamano={22} color={colors.accentStrong} relleno />
+      </View>
+      <Text style={[typography.title, styles.titulo]}>{cuidado.titulo}</Text>
+      <Text style={[typography.body, styles.mensaje]}>{cuidado.mensaje}</Text>
 
-    <View style={styles.lineas}>
-      {cuidado.lineas.map((linea, i) => (
-        <Pressable
-          key={linea.marcar}
-          onPress={() => void Linking.openURL(`tel:${linea.marcar}`)}
-          style={({ pressed }) => [styles.linea, i > 0 && styles.separador, pressed && styles.presionada]}
-          accessibilityRole="button"
-          accessibilityLabel={`Llamar al ${linea.numero}, ${linea.nombre}`}
-        >
-          <View style={styles.cuadroTelefono}>
-            <Icono nombre="telefono" tamano={15} color="#FFFFFF" relleno />
-          </View>
-          <View style={styles.datos}>
-            <Text style={[typography.bodyMedium, styles.numero]}>
-              {linea.numero} <Text style={styles.nombre}>· {linea.nombre}</Text>
-            </Text>
-            <Text style={[typography.footnote, styles.detalle]}>{linea.detalle}</Text>
-          </View>
-        </Pressable>
-      ))}
-    </View>
+      <View style={styles.lineas}>
+        {cuidado.lineas.map((linea, i) => (
+          <Pressable
+            key={linea.marcar}
+            onPress={() => void Linking.openURL(`tel:${linea.marcar}`)}
+            style={({ pressed }) => [styles.linea, i > 0 && styles.separador, pressed && styles.presionada]}
+            accessibilityRole="button"
+            accessibilityLabel={t('care.call').replace('{numero}', linea.numero).replace('{nombre}', linea.nombre)}
+          >
+            <View style={styles.cuadroTelefono}>
+              <Icono nombre="telefono" tamano={15} color="#FFFFFF" relleno />
+            </View>
+            <View style={styles.datos}>
+              <Text style={[typography.bodyMedium, styles.numero]}>
+                {linea.numero} <Text style={styles.nombre}>· {linea.nombre}</Text>
+              </Text>
+              <Text style={[typography.footnote, styles.detalle]}>{linea.detalle}</Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
 
-    <Text style={[typography.footnote, styles.aclaracion]}>{cuidado.aclaracion}</Text>
-  </View>
-);
+      <Text style={[typography.footnote, styles.aclaracion]}>{cuidado.aclaracion}</Text>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   tarjeta: {

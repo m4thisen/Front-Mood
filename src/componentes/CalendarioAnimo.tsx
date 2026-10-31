@@ -8,6 +8,7 @@ import { Icono } from './Icono';
 import { Idioma, NIVELES_ANIMO, RegistroDiario } from '@/dominio';
 import { colors, radius, spacing, typography } from '@/tema';
 import { getMoodColor } from '@/tema/colors';
+import { traducir } from '@/i18n';
 import { getMonthGrid, monthLabel, toISODate, weekdayLabels } from '@/utils/fecha';
 import { hapticos } from '@/utils/hapticos';
 
@@ -67,8 +68,8 @@ export const CalendarioAnimo: React.FC<Props> = ({
           <Icono nombre="desplegar" tamano={12} color={colors.accentStrong} peso="bold" />
         </Pressable>
         <View style={styles.flechas}>
-          <BotonIcono icono="atras" etiqueta="Mes anterior" onPress={onMesAnterior} tamano={32} />
-          <BotonIcono icono="adelante" etiqueta="Mes siguiente" onPress={onMesSiguiente} tamano={32} />
+          <BotonIcono icono="atras" etiqueta={traducir(idioma, 'calendar.previousMonth')} onPress={onMesAnterior} tamano={32} />
+          <BotonIcono icono="adelante" etiqueta={traducir(idioma, 'calendar.nextMonth')} onPress={onMesSiguiente} tamano={32} />
         </View>
       </View>
 

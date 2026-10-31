@@ -18,8 +18,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Bienvenida'>;
 type Accion = 'registro' | 'ingreso' | 'prueba';
 
 const MENSAJES: Record<Exclude<ErrorIngreso, 'NO_SE_PUDO'>, string> = {
-  SIN_CONEXION: 'No pudimos conectarnos. Revisá tu conexión y probá de nuevo.',
-  DEMASIADOS_INTENTOS: 'Hubo demasiados intentos seguidos. Esperá un minuto y probá de nuevo.',
+  SIN_CONEXION: 'welcome.errorConnection',
+  DEMASIADOS_INTENTOS: 'welcome.errorTooMany',
 };
 
 /**
@@ -50,9 +50,9 @@ export const BienvenidaScreen: React.FC<Props> = () => {
   const aviso = error
     ? error === 'NO_SE_PUDO'
       ? t('welcome.googleError')
-      : MENSAJES[error]
+      : t(MENSAJES[error])
     : sesionVencida
-      ? 'Tu sesión se cerró. Volvé a entrar para seguir.'
+      ? t('welcome.sessionEnded')
       : null;
 
   return (
@@ -113,14 +113,14 @@ export const BienvenidaScreen: React.FC<Props> = () => {
         {__DEV__ && (
           <>
             <Boton
-              titulo="Cuenta de prueba (desarrollo)"
+              titulo={t('welcome.testAccount')}
               variante="texto"
               onPress={() => ingresar('prueba')}
               cargando={enCurso === 'prueba'}
               deshabilitado={enCurso !== null}
             />
             <Boton
-              titulo="Cuenta demo (desarrollo)"
+              titulo={t('welcome.demoAccount')}
               variante="texto"
               onPress={() => entrarConCuentaDemo(language)}
               deshabilitado={enCurso !== null}

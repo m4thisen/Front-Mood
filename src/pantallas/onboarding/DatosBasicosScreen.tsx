@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import { PasoOnboarding } from '@/componentes/PasoOnboarding';
 import { Boton } from '@/componentes/Boton';
 import { Chip } from '@/componentes/Chip';
@@ -13,7 +13,7 @@ import { useTranslation } from '@/i18n';
 import { useSesionStore } from '@/stores/SesionStore';
 import { RootStackParamList } from '@/navegacion/tipos';
 import { calcularEdad, Genero, GENEROS, LARGO_MAXIMO_NOMBRE } from '@/dominio';
-import { dateLocale, localeSelector, toISODate } from '@/utils/fecha';
+import { formatearFecha, localeSelector, toISODate } from '@/utils/fecha';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DatosBasicos'>;
 
@@ -75,7 +75,7 @@ export const DatosBasicosScreen: React.FC<Props> = ({ navigation }) => {
       >
         <Text style={[typography.bodyMedium, { color: nacimiento ? colors.textPrimary : colors.textTertiary }]}>
           {nacimiento
-            ? format(nacimiento, "d 'de' MMMM 'de' yyyy", { locale: dateLocale(language) })
+            ? formatearFecha(nacimiento, 'fechaLarga', language)
             : t('register.birthDatePlaceholder')}
         </Text>
         <Icono nombre="calendario" tamano={16} color={colors.textTertiary} />

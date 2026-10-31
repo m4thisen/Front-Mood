@@ -7,6 +7,7 @@
  * siempre a la misma cuenta, así se prueban CU-01 (nueva) y CU-02 (existente).
  */
 import { Alert, Platform } from 'react-native';
+import { idiomaActual, traducir } from '@/i18n';
 import { ProveedorIdentidad } from './AuthService';
 
 const EMAIL_POR_DEFECTO = 'lucia@ejemplo.com';
@@ -24,13 +25,14 @@ export const identidadSimulada: ProveedorIdentidad = {
     // Alert.prompt solo existe en iOS; en Android entra siempre con el mismo email.
     if (Platform.OS !== 'ios') return Promise.resolve(tokenSimulado(EMAIL_POR_DEFECTO));
 
+    const idioma = idiomaActual();
     return new Promise((resolver) => {
       Alert.prompt(
-        'Cuenta de prueba',
-        'Escribí cualquier email. El mismo email entra siempre a la misma cuenta.',
+        traducir(idioma, 'welcome.testAccountTitle'),
+        traducir(idioma, 'welcome.testAccountBody'),
         [
-          { text: 'Cancelar', style: 'cancel', onPress: () => resolver(null) },
-          { text: 'Entrar', onPress: (email?: string) => resolver(tokenSimulado(email ?? '')) },
+          { text: traducir(idioma, 'common.cancel'), style: 'cancel', onPress: () => resolver(null) },
+          { text: traducir(idioma, 'welcome.enter'), onPress: (email?: string) => resolver(tokenSimulado(email ?? '')) },
         ],
         'plain-text',
         EMAIL_POR_DEFECTO,

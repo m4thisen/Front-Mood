@@ -1,7 +1,7 @@
 import React from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { BotonIcono, EncabezadoSeccion } from '@/componentes/Encabezados';
 import { CaraAnimo } from '@/componentes/CaraAnimo';
@@ -15,7 +15,7 @@ import { useRegistroStore } from '@/stores/RegistroStore';
 import { useSesionStore } from '@/stores/SesionStore';
 import { claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
 import { RootStackParamList } from '@/navegacion/tipos';
-import { dateLocale, todayISO } from '@/utils/fecha';
+import { formatearFecha, todayISO, unDecimal } from '@/utils/fecha';
 import { enlaceSpotify, esEditable } from '@/dominio';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DetalleDia'>;
@@ -32,7 +32,7 @@ export const DetalleDiaScreen: React.FC<Props> = ({ route, navigation }) => {
   const tags = useSesionStore((s) => s.tags);
   const editable = esEditable({ fecha }, todayISO());
 
-  const titulo = format(parseISO(fecha), "EEEE d 'de' MMMM", { locale: dateLocale(language) });
+  const titulo = formatearFecha(fecha, 'diaLargo', language);
 
   const irAHoy = () => {
     navigation.goBack();
@@ -66,7 +66,7 @@ export const DetalleDiaScreen: React.FC<Props> = ({ route, navigation }) => {
             icono="sueno"
             colorIcono="#7C6CF2"
             titulo={t('today.sleepShort')}
-            valor={`${String(registro.horasSueno).replace('.', ',')} h`}
+            valor={`${unDecimal(registro.horasSueno, language).replace(/[.,]0$/, '')} h`}
           />
         ),
         registro.minutosEjercicio !== null && (

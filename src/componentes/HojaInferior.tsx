@@ -4,6 +4,7 @@ import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSpring } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BotonIcono } from './Encabezados';
 import { colors, radius, spacing, typography } from '@/tema';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   visible: boolean;
@@ -26,6 +27,7 @@ const FUERA_DE_PANTALLA = Dimensions.get('window').height;
  */
 export const HojaInferior: React.FC<Props> = ({ visible, titulo, onCerrar, children, pie }) => {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const desplazamiento = useSharedValue(FUERA_DE_PANTALLA);
 
   useEffect(() => {
@@ -37,13 +39,13 @@ export const HojaInferior: React.FC<Props> = ({ visible, titulo, onCerrar, child
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onCerrar} statusBarTranslucent>
       <Animated.View entering={FadeIn.duration(180)} style={styles.fondo}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onCerrar} accessibilityLabel="Cerrar" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onCerrar} accessibilityLabel={t('common.close')} />
       </Animated.View>
       <Animated.View style={[styles.hoja, { paddingBottom: Math.max(insets.bottom, spacing.lg) }, estiloHoja]}>
         <View style={styles.agarre} />
         <View style={styles.cabecera}>
           <Text style={[typography.headline, styles.titulo]}>{titulo}</Text>
-          <BotonIcono icono="cerrar" etiqueta="Cerrar" onPress={onCerrar} tamano={30} />
+          <BotonIcono icono="cerrar" etiqueta={t('common.close')} onPress={onCerrar} tamano={30} />
         </View>
         <ScrollView style={styles.contenido} bounces={false} keyboardShouldPersistTaps="handled">
           {children}

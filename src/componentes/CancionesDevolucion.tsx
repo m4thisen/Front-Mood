@@ -5,6 +5,7 @@ import { Icono } from './Icono';
 import { colors, radius, spacing, typography } from '@/tema';
 import { shade } from '@/utils/color';
 import { Cancion, enlaceSpotify } from '@/dominio';
+import { useTranslation } from '@/i18n';
 
 const TAMANO_PORTADA = 136;
 
@@ -16,39 +17,42 @@ const enlace = (cancion: Cancion) =>
  * Música para tu momento (RF-24): las canciones que sugirió la IA, con la
  * portada de Spotify. Tocarlas las abre en Spotify.
  */
-export const CancionesDevolucion: React.FC<{ canciones: Cancion[]; colorBase: string }> = ({ canciones, colorBase }) => (
-  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carrusel} style={styles.desborde}>
-    {canciones.map((cancion, i) => (
-      <Pressable
-        key={`${cancion.titulo}-${cancion.artista}`}
-        onPress={() => void Linking.openURL(enlace(cancion))}
-        style={({ pressed }) => [styles.item, pressed && styles.presionado]}
-        accessibilityRole="link"
-        accessibilityLabel={`${cancion.titulo}, de ${cancion.artista}. Abrir en Spotify`}
-      >
-        {cancion.portadaUrl ? (
-          <Image source={{ uri: cancion.portadaUrl }} style={styles.portada} accessibilityIgnoresInvertColors />
-        ) : (
-          // Sin portada: un degradé con el Color del Alma, como antes.
-          <LinearGradient
-            colors={[shade(colorBase, 0.3 - i * 0.1), colorBase, shade(colorBase, -0.4)]}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={styles.portada}
-          >
-            <Icono nombre="musica" tamano={30} color="rgba(255,255,255,0.92)" peso="semibold" />
-          </LinearGradient>
-        )}
-        <Text style={[typography.bodyMedium, styles.titulo]} numberOfLines={1}>
-          {cancion.titulo}
-        </Text>
-        <Text style={[typography.footnote, styles.artista]} numberOfLines={1}>
-          {cancion.artista}
-        </Text>
-      </Pressable>
-    ))}
-  </ScrollView>
-);
+export const CancionesDevolucion: React.FC<{ canciones: Cancion[]; colorBase: string }> = ({ canciones, colorBase }) => {
+  const { t } = useTranslation();
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carrusel} style={styles.desborde}>
+      {canciones.map((cancion, i) => (
+        <Pressable
+          key={`${cancion.titulo}-${cancion.artista}`}
+          onPress={() => void Linking.openURL(enlace(cancion))}
+          style={({ pressed }) => [styles.item, pressed && styles.presionado]}
+          accessibilityRole="link"
+          accessibilityLabel={t('song.openInSpotify').replace('{titulo}', cancion.titulo).replace('{artista}', cancion.artista)}
+        >
+          {cancion.portadaUrl ? (
+            <Image source={{ uri: cancion.portadaUrl }} style={styles.portada} accessibilityIgnoresInvertColors />
+          ) : (
+            // Sin portada: un degradé con el Color del Alma, como antes.
+            <LinearGradient
+              colors={[shade(colorBase, 0.3 - i * 0.1), colorBase, shade(colorBase, -0.4)]}
+              start={{ x: 0.1, y: 0 }}
+              end={{ x: 0.9, y: 1 }}
+              style={styles.portada}
+            >
+              <Icono nombre="musica" tamano={30} color="rgba(255,255,255,0.92)" peso="semibold" />
+            </LinearGradient>
+          )}
+          <Text style={[typography.bodyMedium, styles.titulo]} numberOfLines={1}>
+            {cancion.titulo}
+          </Text>
+          <Text style={[typography.footnote, styles.artista]} numberOfLines={1}>
+            {cancion.artista}
+          </Text>
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+};
 
 const styles = StyleSheet.create({
   // El carrusel llega hasta los bordes de la pantalla, como en Apple Music.

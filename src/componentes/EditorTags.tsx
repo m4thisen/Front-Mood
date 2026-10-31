@@ -84,7 +84,7 @@ export const EditorTags: React.FC = () => {
                 onPress={() => (enEdicion ? terminarEdicion() : empezarEdicion(tag))}
                 style={[styles.removableTag, enEdicion && styles.tagEnEdicion]}
                 accessibilityRole="button"
-                accessibilityHint="Cambiar el nombre o eliminar"
+                accessibilityHint={t('tags.editHint')}
                 accessibilityState={{ selected: enEdicion }}
               >
                 <Icono nombre="tag" tamano={13} color={colors.textTertiary} />
@@ -99,7 +99,7 @@ export const EditorTags: React.FC = () => {
         </View>
       )}
       {tags.length > 0 && !editando && (
-        <Text style={[typography.footnote, styles.pista]}>Tocá un tag para cambiarle el nombre o eliminarlo.</Text>
+        <Text style={[typography.footnote, styles.pista]}>{t('tags.tapToEdit')}</Text>
       )}
       <TextInput
         value={nombre}
@@ -119,13 +119,13 @@ export const EditorTags: React.FC = () => {
       {editando ? (
         <View style={styles.acciones}>
           <Boton
-            titulo="Guardar nombre"
+            titulo={t('tags.saveName')}
             icono="editar"
             onPress={guardarNombre}
             variante="secundario"
             deshabilitado={!nombre.trim()}
           />
-          <Boton titulo="Eliminar tag" variante="peligro" onPress={() => confirmarEliminacion(editando)} />
+          <Boton titulo={t('tags.deleteTag')} variante="peligro" onPress={() => confirmarEliminacion(editando)} />
           <Boton titulo={t('common.cancel')} variante="texto" onPress={terminarEdicion} />
         </View>
       ) : (

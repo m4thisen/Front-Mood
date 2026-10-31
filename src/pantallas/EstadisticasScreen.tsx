@@ -14,7 +14,7 @@ import { useTranslation } from '@/i18n';
 import { useListaRegistros } from '@/stores/RegistroStore';
 import { claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
 import { NIVELES_ANIMO, NivelAnimo } from '@/dominio';
-import { weekdayName } from '@/utils/fecha';
+import { unDecimal, weekdayName } from '@/utils/fecha';
 import {
   animoSegunHabito,
   distribucion,
@@ -32,7 +32,6 @@ const ICONOS_FRANJA: Record<FranjaHoraria, NombreIcono> = {
   MADRUGADA: 'franjaMadrugada',
 };
 
-const unDecimal = (n: number) => n.toFixed(1).replace('.', ',');
 
 /**
  * Estadísticas (CU-17 y CU-18), calculadas en el dispositivo por el
@@ -81,7 +80,7 @@ export const EstadisticasScreen: React.FC = () => {
             <CaraAnimo nivel={Math.round(promedioAnimo) as NivelAnimo} tamano={26} />
           )}
           <Text style={[typography.statNumber, styles.valorTile]}>
-            {promedioAnimo !== null ? unDecimal(promedioAnimo) : '—'}
+            {promedioAnimo !== null ? unDecimal(promedioAnimo, language) : '—'}
           </Text>
           <Text style={[typography.micro, styles.etiquetaTile]}>{t('stats.average')}</Text>
         </View>

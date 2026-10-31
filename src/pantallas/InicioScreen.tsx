@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { format } from 'date-fns';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { EncabezadoPantalla } from '@/componentes/Encabezados';
 import { CalendarioAnimo } from '@/componentes/CalendarioAnimo';
@@ -15,7 +14,7 @@ import { useTranslation } from '@/i18n';
 import { useSesionStore } from '@/stores/SesionStore';
 import { useIndicadoresProgreso, useRegistroStore } from '@/stores/RegistroStore';
 import { coachmarkHoyVisto, marcarCoachmarkHoyVisto } from '@/persistencia/PreferenciasDispositivo';
-import { dateLocale } from '@/utils/fecha';
+import { formatearFecha } from '@/utils/fecha';
 
 const claveSaludo = (hora: number) =>
   hora < 12 ? 'home.greetingMorning' : hora < 20 ? 'home.greetingAfternoon' : 'home.greetingNight';
@@ -77,7 +76,7 @@ export const InicioScreen: React.FC = () => {
       }
     >
       <EncabezadoPantalla
-        antetitulo={format(ahora, "EEEE d 'de' MMMM", { locale: dateLocale(language) })}
+        antetitulo={formatearFecha(ahora, 'diaLargo', language)}
         titulo={saludo}
       />
 

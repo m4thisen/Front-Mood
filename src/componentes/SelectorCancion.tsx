@@ -11,6 +11,8 @@ interface Props {
   onCambio: (cancion: Cancion | null) => void;
   buscar: (consulta: string) => Promise<Cancion[]>;
   placeholder: string;
+  /** Cuando aparecen los resultados: la pantalla los corre arriba del teclado, que si no los tapa. */
+  alMostrarResultados?: (resultados: View) => void;
 }
 
 /** Cuánto se espera después de la última letra antes de buscar. */
@@ -24,7 +26,7 @@ type Estado = 'quieto' | 'buscando' | 'listo' | 'sinResultados' | 'sinBusqueda';
  * Spotify. Si no se puede buscar (sin conexión, o Spotify no responde), se
  * guarda tal como se escribió: el registro nunca depende de Spotify.
  */
-export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, placeholder }) => {
+export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, placeholder, alMostrarResultados }) => {
   const [texto, setTexto] = useState(valor && !valor.spotifyId ? valor.titulo : '');
   const [resultados, setResultados] = useState<Cancion[]>([]);
   const [estado, setEstado] = useState<Estado>('quieto');
@@ -32,6 +34,14 @@ export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, plac
   const [escribio, setEscribio] = useState(false);
   // Solo vale la respuesta de la última búsqueda: las anteriores pueden llegar tarde.
   const ultima = useRef(0);
+  const refResultados = useRef<View>(null);
+
+  useEffect(() => {
+    if (resultados.length === 0 || !alMostrarResultados) return;
+    // Recién después de que se dibujan, para medir su alto real.
+    const cuadro = requestAnimationFrame(() => refResultados.current && alMostrarResultados(refResultados.current));
+    return () => cancelAnimationFrame(cuadro);
+  }, [resultados, alMostrarResultados]);
 
   useEffect(() => {
     const consulta = texto.trim();
@@ -115,7 +125,7 @@ export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, plac
         {estado === 'buscando' && <ActivityIndicator size="small" color={colors.textTertiary} />}
       </View>
       {resultados.length > 0 && (
-        <View style={styles.resultados}>
+        <View ref={refResultados} style={styles.resultados}>
           {resultados.map((cancion, i) => (
             <Pressable
               key={cancion.spotifyId}

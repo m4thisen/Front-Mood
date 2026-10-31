@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, AppState, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, parseISO } from 'date-fns';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { EncabezadoPantalla, EncabezadoSeccion } from '@/componentes/Encabezados';
@@ -66,6 +67,12 @@ export const RegistroScreen: React.FC = () => {
 
   const bloques = useMemo(() => bloquesActivos(usuario?.bloquesActivos ?? []), [usuario]);
   const buscarCancion = useCallback((consulta: string) => musicaService.buscar(consulta), []);
+  // La cuenta de React Native mide desde el borde de la lista, que empieza debajo del área segura de arriba.
+  const { top: margenArriba } = useSafeAreaInsets();
+  const mostrarArribaDelTeclado = useCallback(
+    (vista: View) => refScroll.current?.scrollResponderScrollNativeHandleToKeyboard(vista, margenArriba + spacing.lg, true),
+    [margenArriba]
+  );
 
   const [fecha, setFecha] = useState(todayISO);
   const registroDelDia = useRegistroStore((s) => s.registros[fecha] ?? null);
@@ -357,6 +364,7 @@ export const RegistroScreen: React.FC = () => {
         onCambio={setCancion}
         buscar={buscarCancion}
         placeholder="Buscá la canción del día"
+        alMostrarResultados={mostrarArribaDelTeclado}
       />
 
       {tagsActivos.length > 0 && (

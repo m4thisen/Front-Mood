@@ -139,22 +139,22 @@ npx expo prebuild --platform ios --clean
 
 La app se construye y se prueba para iPhone.
 
-`npm audit` todavía marca dos avisos altos y uno moderado, todos en
-herramientas de compilación y de pruebas que no tienen versión corregida
-publicada:
+`npm audit` no marca avisos críticos ni altos (revisado el 31/10/2026). Los
+dos últimos altos estaban en la CLI de Expo, la herramienta que compila y
+sirve la app en la compu (no viaja dentro de la app):
 
-| Paquete | Aviso | Lo trae |
-|---|---|---|
-| `braces` 3.0.3 (alto) | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | Jest y la CLI de Expo, para resolver patrones de archivos |
-| `node-forge` 1.4.0 (alto) | [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) | La CLI de Expo, para firmar actualizaciones (no se usa) |
-| `sprintf-js` 1.1.3 (moderado) | [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) | Jest (cobertura) |
+- `node-forge` pasó a la 1.4.2, que corrige los avisos y entra en el rango
+  que pide Expo.
+- `zod`: la CLI de Expo pide la 3, y el arreglo
+  ([GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5))
+  salió en la 4.6.6. Se le fuerza la 4 con `overrides`: la CLI la usa solo
+  para describir sus extensiones de desarrollo, con funciones que la 4
+  mantiene. Se comprobó que `expo config`, `expo export` y `expo start`
+  siguen andando.
 
-Ninguno viaja dentro de la app: el bundle de producción
-(`npx expo export --platform ios --source-maps`) no incluye ningún módulo de
-esos paquetes. Además, los tres fallan solo con datos de un atacante (patrones,
-firmas o formatos armados a propósito), y estas herramientas solo procesan
-archivos del propio proyecto. Hay que volver a correr `npm audit` antes de la
-entrega por si aparece la versión corregida.
+Quedan avisos bajos y moderados, todos en herramientas de compilación y de
+pruebas (Jest, la CLI de Expo): ninguno viaja dentro de la app. Hay que volver
+a correr `npm audit` antes de la entrega.
 
 `uuid` sí tenía arreglo: se fuerza la 11.1.1 con `overrides` en
 `package.json`.

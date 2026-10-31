@@ -123,12 +123,18 @@ export const useSesionStore = create<EstadoSesion>((set, get) => ({
     const usuario = { ...actual, ...cambios };
     await UsuarioLocal.guardar(usuario);
     set({ usuario });
-    if (cambios.idioma && cambios.idioma !== actual.idioma) {
+    const cambioIdioma = !!cambios.idioma && cambios.idioma !== actual.idioma;
+    if (cambioIdioma) {
       // Los avisos ya programados quedaron en el idioma anterior; el ejemplo de la cuenta demo, también.
       void get().programarRecordatorio();
       if (usuario.id === ID_USUARIO_DEMO) void useDevolucionStore.getState().cargar(usuario.id, usuario.idioma);
     }
     await paraElServidor(usuario.id, (id) => preferencias.marcarPerfil(id));
+    // Recién con el idioma nuevo en el servidor (enviar devuelve el envío en curso), la devolución
+    // vigente se vuelve a escribir en ese idioma.
+    if (cambioIdioma && usuario.id !== ID_USUARIO_DEMO) {
+      void preferencias.enviar(usuario.id).then(() => useDevolucionStore.getState().actualizar());
+    }
   },
 
   cambiarPermisoTexto: async (permitido) => {

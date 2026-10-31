@@ -161,6 +161,7 @@ export function devolucionesDemo(idioma: Idioma = 'es', hoy = new Date()): Devol
     rapida: {
       id: 'demo-devolucion-rapida',
       tipo: 'rapida',
+      idioma,
       desde: ayer,
       hasta: ayer,
       generadaEn: new Date(`${ayer}T22:00:00`).toISOString(),
@@ -176,6 +177,7 @@ export function devolucionesDemo(idioma: Idioma = 'es', hoy = new Date()): Devol
     semanal: {
       id: 'demo-devolucion-semanal',
       tipo: 'semanal',
+      idioma,
       desde: toISODate(subDays(domingo, 6)),
       hasta: toISODate(domingo),
       generadaEn: domingo.toISOString(),

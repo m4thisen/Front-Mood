@@ -31,6 +31,7 @@ export function devolucion(tipo: 'rapida' | 'semanal', hasta: string, extra: Par
   return {
     id: `devolucion-${tipo}-${hasta}`,
     tipo,
+    idioma: 'es',
     desde: hasta,
     hasta,
     generadaEn: `${hasta}T22:00:00.000Z`,

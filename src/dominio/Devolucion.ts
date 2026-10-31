@@ -4,6 +4,7 @@
  * (patrones, días) salen de ese cálculo, no de Claude.
  */
 import { Cancion } from './Cancion';
+import { Idioma } from './tipos';
 
 export type TipoDevolucion = 'rapida' | 'semanal';
 
@@ -20,6 +21,8 @@ export interface PatronDevolucion {
 export interface Devolucion {
   id: string;
   tipo: TipoDevolucion;
+  /** En qué idioma la escribió la IA: el de la app. Si cambia, el servidor la reescribe. */
+  idioma: Idioma;
   /** yyyy-mm-dd: el período que cubre. */
   desde: string;
   hasta: string;

@@ -296,14 +296,17 @@ export function armarInformeHtml({ registros: sinOrdenar, usuario, tags, textos,
 <title>Mood · Historial${nombre ? ` de ${html(nombre)}` : ''}</title>
 <style>
   @page { size: A4; margin: 16mm 14mm; }
-  * { box-sizing: border-box; }
+  /* Al imprimir, iOS saca los fondos si no se le pide: sin esto no salen las barras ni los colores del calendario. */
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   /* Siempre claro: se imprime, y el teléfono puede estar en modo oscuro. */
   html, body { background: #FFFFFF; color-scheme: light; }
   body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; color: #0B1120; font-size: 12px; line-height: 1.45; margin: 0; }
   @media screen { body { max-width: 820px; margin: 0 auto; padding: 24px; } }
   .marca { color: #4D6BFE; font-weight: 700; letter-spacing: 0.08em; font-size: 11px; text-transform: uppercase; }
   h1 { font-size: 24px; margin: 4px 0 2px; }
-  h2 { font-size: 15px; margin: 26px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #E6E9F0; break-after: avoid; }
+  h2 { font-size: 15px; margin: 26px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #E6E9F0; break-after: avoid; page-break-after: avoid; }
+  /* Un título nunca queda solo al pie de la página, separado de lo suyo. */
+  .seccion { break-inside: avoid; page-break-inside: avoid; }
   .periodo { color: #5B6478; margin: 0; }
   .aviso { margin-top: 14px; padding: 10px 12px; background: #F4F6FB; border-radius: 8px; color: #3A4256; }
   .tiles { display: flex; gap: 10px; margin-top: 4px; }
@@ -348,20 +351,20 @@ export function armarInformeHtml({ registros: sinOrdenar, usuario, tags, textos,
     total === 0
       ? '<p class="nota">No hay días registrados.</p>'
       : `
-  <h2>Resumen</h2>
-  <div class="tiles">${resumen}</div>
+  <div class="seccion"><h2>Resumen</h2>
+  <div class="tiles">${resumen}</div></div>
 
-  <h2>Cómo se repartieron los días</h2>
-  <table class="reparto">${reparto}</table>
+  <div class="seccion"><h2>Cómo se repartieron los días</h2>
+  <table class="reparto">${reparto}</table></div>
 
-  <h2>El ánimo en el tiempo</h2>
-  ${grafico(registros, textos)}
+  <div class="seccion"><h2>El ánimo en el tiempo</h2>
+  ${grafico(registros, textos)}</div>
 
-  <h2>Calendario</h2>
-  <div class="meses">${calendarios(registros)}</div>
+  <div class="seccion"><h2>Calendario</h2>
+  <div class="meses">${calendarios(registros)}</div></div>
 
-  <h2>Los hábitos y el ánimo</h2>
-  ${tablaHabitos}
+  <div class="seccion"><h2>Los hábitos y el ánimo</h2>
+  ${tablaHabitos}</div>
 
   <h2>Día por día</h2>
   ${diaPorDia(registros, tags, textos)}`

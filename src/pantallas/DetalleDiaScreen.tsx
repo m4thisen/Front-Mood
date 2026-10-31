@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { format, parseISO } from 'date-fns';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
@@ -16,7 +16,7 @@ import { useSesionStore } from '@/stores/SesionStore';
 import { claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
 import { RootStackParamList } from '@/navegacion/tipos';
 import { dateLocale, todayISO } from '@/utils/fecha';
-import { esEditable } from '@/dominio';
+import { enlaceSpotify, esEditable } from '@/dominio';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DetalleDia'>;
 
@@ -85,6 +85,8 @@ export const DetalleDiaScreen: React.FC<Props> = ({ route, navigation }) => {
             colorIcono="#F2547D"
             titulo={t('today.songLabel')}
             valor={[registro.cancion.titulo, registro.cancion.artista].filter(Boolean).join(' — ')}
+            // Si se eligió de Spotify, se abre ahí.
+            onPress={enlaceSpotify(registro.cancion) ? () => void Linking.openURL(enlaceSpotify(registro.cancion!)!) : undefined}
           />
         ),
       ].filter(Boolean)

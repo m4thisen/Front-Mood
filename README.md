@@ -169,7 +169,9 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
 - [x] **Iteración 4 — Núcleo de IA** (la mayor parte en el servidor):
   permiso para que la IA lea el texto, en Mi cuenta y en el formulario del
   día.
-- [ ] Iteración 5 — Música e IA
+- [ ] **Iteración 5 — Música e IA** (en curso): la canción del día se busca
+  en Spotify (a través del servidor) y, si no se puede buscar, se guarda como
+  se escribió; tocándola en el detalle del día se abre en Spotify.
 - [ ] Iteración 6 — Portabilidad y terminación
 
-La IA y la música todavía se simulan dentro de la app.
+Las devoluciones de "Cómo venís" todavía se simulan dentro de la app.

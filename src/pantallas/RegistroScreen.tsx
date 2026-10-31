@@ -12,6 +12,7 @@ import { Icono } from '@/componentes/Icono';
 import { SelectorNumerico } from '@/componentes/SelectorNumerico';
 import { CelebracionGuardado } from '@/componentes/CelebracionGuardado';
 import { PreguntaPermisoTexto } from '@/componentes/PreguntaPermisoTexto';
+import { SelectorCancion } from '@/componentes/SelectorCancion';
 import { useAltoBarraInferior } from '@/componentes/TabBar';
 import { iconoDeBloque, ICONOS_CLIMA } from '@/componentes/iconosDominio';
 import { colors, radius, spacing, typography } from '@/tema';
@@ -20,13 +21,14 @@ import { useSesionStore, useTagsActivos } from '@/stores/SesionStore';
 import { useIndicadoresProgreso, useRegistroStore } from '@/stores/RegistroStore';
 import { bloquesActivos, claveTraduccionBloque, claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
 import * as PreferenciasDispositivo from '@/persistencia/PreferenciasDispositivo';
+import { musicaService } from '@/servicios/conexion';
 import {
+  Cancion,
   Clima,
   CLIMAS,
   DatosRegistro,
   ErrorGuardado,
   ErrorValidacion,
-  LARGO_MAXIMO_CANCION,
   LARGO_MAXIMO_TEXTO,
   LARGO_MAXIMO_VALOR_TAG,
   NivelAnimo,
@@ -63,6 +65,7 @@ export const RegistroScreen: React.FC = () => {
   const refScroll = useRef<ScrollView>(null);
 
   const bloques = useMemo(() => bloquesActivos(usuario?.bloquesActivos ?? []), [usuario]);
+  const buscarCancion = useCallback((consulta: string) => musicaService.buscar(consulta), []);
 
   const [fecha, setFecha] = useState(todayISO);
   const registroDelDia = useRegistroStore((s) => s.registros[fecha] ?? null);
@@ -76,7 +79,7 @@ export const RegistroScreen: React.FC = () => {
   const [climas, setClimas] = useState<Set<Clima>>(new Set(inicial?.climas ?? []));
   const [horasSueno, setHorasSueno] = useState<number | null>(inicial?.horasSueno ?? null);
   const [minutosEjercicio, setMinutosEjercicio] = useState<number | null>(inicial?.minutosEjercicio ?? null);
-  const [cancion, setCancion] = useState(inicial?.cancion?.titulo ?? '');
+  const [cancion, setCancion] = useState<Cancion | null>(inicial?.cancion ?? null);
   const [guardando, setGuardando] = useState(false);
   const [celebrando, setCelebrando] = useState(false);
   const [errores, setErrores] = useState<Set<ErrorValidacion>>(new Set());
@@ -118,7 +121,7 @@ export const RegistroScreen: React.FC = () => {
     setClimas(new Set(registro?.climas ?? []));
     setHorasSueno(registro?.horasSueno ?? null);
     setMinutosEjercicio(registro?.minutosEjercicio ?? null);
-    setCancion(registro?.cancion?.titulo ?? '');
+    setCancion(registro?.cancion ?? null);
     setErrores(new Set());
   }, []);
 
@@ -177,11 +180,8 @@ export const RegistroScreen: React.FC = () => {
       climas: CLIMAS.filter((c) => climas.has(c)),
       horasSueno,
       minutosEjercicio,
-      // Provisorio hasta la iteración 5: el título se escribe a mano. Después
-      // se elige de la búsqueda en Spotify y se completa el resto de los datos.
-      cancion: cancion.trim()
-        ? { spotifyId: '', titulo: cancion.trim(), artista: '', portadaUrl: null }
-        : null,
+      // La elegida en Spotify, o lo que se escribió si no se eligió ninguna.
+      cancion: cancion?.titulo.trim() ? { ...cancion, titulo: cancion.titulo.trim() } : null,
     };
 
     setGuardando(true);
@@ -351,18 +351,13 @@ export const RegistroScreen: React.FC = () => {
         />
       </View>
       {mensajeRango && <Text style={[typography.footnote, styles.errorCampo]}>{t(mensajeRango)}</Text>}
-      <View style={styles.campo}>
-        <Icono nombre="cancion" tamano={16} color={colors.textTertiary} />
-        <TextInput
-          value={cancion}
-          onChangeText={setCancion}
-          maxLength={LARGO_MAXIMO_CANCION}
-          placeholder={t('today.songPlaceholder')}
-          placeholderTextColor={colors.textTertiary}
-          style={[typography.bodyMedium, styles.entrada]}
-          returnKeyType="done"
-        />
-      </View>
+      <SelectorCancion
+        key={fecha}
+        valor={cancion}
+        onCambio={setCancion}
+        buscar={buscarCancion}
+        placeholder="Buscá la canción del día"
+      />
 
       {tagsActivos.length > 0 && (
         <>

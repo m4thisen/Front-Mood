@@ -9,6 +9,7 @@ import { AlmacenSeguro } from '@/persistencia/AlmacenSeguro';
 import { AuthService, ProveedorIdentidad } from './AuthService';
 import { identidadGoogle } from './IdentidadGoogle';
 import { identidadSimulada } from './IdentidadSimulada';
+import { MusicaService } from './MusicaService';
 
 /**
  * EXPO_PUBLIC_API_URL viaja dentro de la app: no es un secreto. En el
@@ -30,6 +31,8 @@ export const api: ApiClient = new ApiClient(urlApi(), {
 });
 
 export const authService: AuthService = new AuthService(api, new AlmacenSeguro(), identidadGoogle, zonaHorariaDelDispositivo);
+
+export const musicaService: MusicaService = new MusicaService(api);
 
 /** Solo en desarrollo: entrar con varias cuentas sin una de Google para cada una. */
 export const cuentaDePrueba: ProveedorIdentidad | null = __DEV__ ? identidadSimulada : null;

@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
 import { format, parseISO } from 'date-fns';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
@@ -8,6 +9,7 @@ import { TarjetaDevolucion } from '@/componentes/TarjetaDevolucion';
 import { PatronesDevolucion } from '@/componentes/PatronesDevolucion';
 import { CancionesDevolucion } from '@/componentes/CancionesDevolucion';
 import { TarjetaCuidado } from '@/componentes/TarjetaCuidado';
+import { entrada } from '@/componentes/animaciones';
 import { Icono, NombreIcono } from '@/componentes/Icono';
 import { useAltoBarraInferior } from '@/componentes/TabBar';
 import { colors, radius, spacing, typography } from '@/tema';
@@ -60,36 +62,41 @@ export const ComoVenisScreen: React.FC = () => {
       />
 
       {cuidado ? (
-        <TarjetaCuidado cuidado={cuidado} />
+        <Animated.View entering={entrada()}>
+          <TarjetaCuidado cuidado={cuidado} />
+        </Animated.View>
       ) : (
         <>
           {actualizando && rapida && <Aviso icono="ia" texto="Armando la devolución de hoy…" cargando arriba />}
 
           {rapida ? (
-            <TarjetaDevolucion devolucion={rapida} cuando={cuandoRapida(rapida)} />
+            // Con la clave, una devolución nueva entra de nuevo en lugar de cambiar de golpe.
+            <Animated.View key={rapida.id} entering={entrada()}>
+              <TarjetaDevolucion devolucion={rapida} cuando={cuandoRapida(rapida)} />
+            </Animated.View>
           ) : (
             <SinDevolucion pedido={pedido} registroDeHoy={!!registroDeHoy} />
           )}
 
           {rapida && rapida.patrones.length > 0 && (
-            <>
+            <Animated.View key={`patrones-${rapida.id}`} entering={entrada(1)}>
               <EncabezadoSeccion titulo="Lo que te viene acompañando" />
               <PatronesDevolucion patrones={rapida.patrones} />
-            </>
+            </Animated.View>
           )}
 
           {rapida && rapida.canciones.length > 0 && (
-            <>
+            <Animated.View key={`canciones-${rapida.id}`} entering={entrada(2)}>
               <EncabezadoSeccion titulo={t('ai.playlistsTitle')} />
               <CancionesDevolucion canciones={rapida.canciones} colorBase={colorDelAlma ?? colors.accent} />
-            </>
+            </Animated.View>
           )}
 
           {semanal ? (
-            <>
+            <Animated.View key={semanal.id} entering={entrada(3)}>
               <EncabezadoSeccion titulo="Tu semana" />
               <TarjetaDevolucion devolucion={semanal} cuando={cuandoSemanal(semanal)} />
-            </>
+            </Animated.View>
           ) : (
             <Aviso icono="calendario" texto={t('howYouAre.weeklyNotice')} />
           )}

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { aparecer, desaparecer } from './animaciones';
 import { Icono } from './Icono';
 import { colors, radius, spacing, typography } from '@/tema';
 import { Cancion, LARGO_MAXIMO_CANCION } from '@/dominio';
@@ -91,7 +93,7 @@ export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, plac
 
   if (valor?.spotifyId) {
     return (
-      <View style={[styles.campo, styles.elegida]}>
+      <Animated.View entering={aparecer} style={[styles.campo, styles.elegida]}>
         <Portada url={valor.portadaUrl} />
         <View style={styles.datos}>
           <Text style={[typography.bodyMedium, styles.titulo]} numberOfLines={1}>
@@ -104,7 +106,7 @@ export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, plac
         <Pressable onPress={quitar} hitSlop={12} accessibilityRole="button" accessibilityLabel="Quitar la canción">
           <Icono nombre="cerrar" tamano={14} color={colors.textTertiary} peso="semibold" />
         </Pressable>
-      </View>
+      </Animated.View>
     );
   }
 
@@ -125,7 +127,7 @@ export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, plac
         {estado === 'buscando' && <ActivityIndicator size="small" color={colors.textTertiary} />}
       </View>
       {resultados.length > 0 && (
-        <View ref={refResultados} style={styles.resultados}>
+        <Animated.View ref={refResultados} entering={aparecer} exiting={desaparecer} style={styles.resultados}>
           {resultados.map((cancion, i) => (
             <Pressable
               key={cancion.spotifyId}
@@ -145,7 +147,7 @@ export const SelectorCancion: React.FC<Props> = ({ valor, onCambio, buscar, plac
               </View>
             </Pressable>
           ))}
-        </View>
+        </Animated.View>
       )}
       {estado === 'sinResultados' && (
         <Text style={[typography.footnote, styles.aviso]}>No la encontramos en Spotify: se guarda como la escribiste.</Text>

@@ -1,11 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { ScreenContainer } from '@/componentes/ScreenContainer';
 import { EncabezadoPantalla, EncabezadoSeccion } from '@/componentes/Encabezados';
 import { CaraAnimo } from '@/componentes/CaraAnimo';
 import { Icono, NombreIcono } from '@/componentes/Icono';
 import { iconoDeEtiqueta } from '@/componentes/iconosDominio';
 import { useAltoBarraInferior } from '@/componentes/TabBar';
+import { crecer } from '@/componentes/animaciones';
 import { colors, radius, spacing, typography } from '@/tema';
 import { getMoodColor } from '@/tema/colors';
 import { useTranslation } from '@/i18n';
@@ -112,12 +114,7 @@ export const EstadisticasScreen: React.FC = () => {
               </Text>
               <View style={styles.pista}>
                 {cantidad > 0 && (
-                  <View
-                    style={[
-                      styles.barra,
-                      { width: `${(cantidad / maxNivel) * 100}%`, backgroundColor: getMoodColor(nivel) },
-                    ]}
-                  />
+                  <BarraAnimada porcentaje={(cantidad / maxNivel) * 100} color={getMoodColor(nivel)} orden={5 - nivel} />
                 )}
               </View>
               <Text style={[typography.footnote, styles.valorBarra]}>{porcentaje}%</Text>
@@ -130,14 +127,14 @@ export const EstadisticasScreen: React.FC = () => {
         <>
           <EncabezadoSeccion titulo={t('stats.topTags')} />
           <View style={styles.tarjeta}>
-            {masMarcadas.map((m) => (
+            {masMarcadas.map((m, i) => (
               <View key={m.clave} style={styles.filaBarra}>
                 <Icono nombre={iconoDeEtiqueta(m.clave)} tamano={16} color={colors.textTertiary} />
                 <Text style={[typography.footnote, styles.etiquetaBarra]} numberOfLines={1}>
                   {t(claveTraduccionEtiqueta(m.clave))}
                 </Text>
                 <View style={styles.pista}>
-                  <View style={[styles.barra, { width: `${(m.cantidad / maxMarcada) * 100}%`, backgroundColor: colors.accent }]} />
+                  <BarraAnimada porcentaje={(m.cantidad / maxMarcada) * 100} color={colors.accent} orden={i} />
                 </View>
                 <Text style={[typography.footnote, styles.valorBarra]}>{m.cantidad}</Text>
               </View>
@@ -185,6 +182,16 @@ export const EstadisticasScreen: React.FC = () => {
 };
 
 const capitalizar = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1);
+
+/** Una barra que crece desde cero hasta su valor; si el valor cambia, se acomoda. */
+const BarraAnimada: React.FC<{ porcentaje: number; color: string; orden: number }> = ({ porcentaje, color, orden }) => {
+  const ancho = useSharedValue(0);
+  useEffect(() => {
+    ancho.value = crecer(porcentaje, orden);
+  }, [ancho, porcentaje, orden]);
+  const estilo = useAnimatedStyle(() => ({ width: `${ancho.value}%` }));
+  return <Animated.View style={[styles.barra, { backgroundColor: color }, estilo]} />;
+};
 
 const styles = StyleSheet.create({
   content: {

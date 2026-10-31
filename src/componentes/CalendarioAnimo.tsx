@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { aparecer } from './animaciones';
 import { isAfter, isSameMonth, isToday, startOfDay } from 'date-fns';
 import { BotonIcono } from './Encabezados';
 import { Icono } from './Icono';
@@ -98,52 +100,55 @@ export const CalendarioAnimo: React.FC<Props> = ({
         ))}
       </View>
 
-      {semanas.map((semana, si) => (
-        <View key={si} style={styles.fila}>
-          {semana.map((dia) => {
-            const enMes = isSameMonth(dia, fechaMes);
-            const fecha = toISODate(dia);
-            const registro = enMes ? registros[fecha] : undefined;
-            const esHoy = isToday(dia);
-            const futuro = isAfter(dia, hoy);
+      {/* Con la clave del mes, al cambiar de mes los días aparecen con un fundido. */}
+      <Animated.View key={`${anio}-${mes}`} entering={aparecer}>
+        {semanas.map((semana, si) => (
+          <View key={si} style={styles.fila}>
+            {semana.map((dia) => {
+              const enMes = isSameMonth(dia, fechaMes);
+              const fecha = toISODate(dia);
+              const registro = enMes ? registros[fecha] : undefined;
+              const esHoy = isToday(dia);
+              const futuro = isAfter(dia, hoy);
 
-            return (
-              <Pressable
-                key={fecha}
-                onPress={() => {
-                  hapticos.seleccion();
-                  onSeleccionarDia(fecha);
-                }}
-                disabled={!enMes || futuro}
-                accessibilityLabel={fecha}
-                style={styles.celda}
-              >
-                {enMes && (
-                  <View
-                    style={[
-                      styles.dia,
-                      registro && { backgroundColor: getMoodColor(registro.nivelAnimo) },
-                      esHoy && styles.hoy,
-                    ]}
-                  >
-                    <Text
+              return (
+                <Pressable
+                  key={fecha}
+                  onPress={() => {
+                    hapticos.seleccion();
+                    onSeleccionarDia(fecha);
+                  }}
+                  disabled={!enMes || futuro}
+                  accessibilityLabel={fecha}
+                  style={styles.celda}
+                >
+                  {enMes && (
+                    <View
                       style={[
-                        typography.footnote,
-                        styles.numero,
-                        registro && styles.numeroSobreColor,
-                        futuro && styles.numeroFuturo,
+                        styles.dia,
+                        registro && { backgroundColor: getMoodColor(registro.nivelAnimo) },
+                        esHoy && styles.hoy,
                       ]}
                     >
-                      {dia.getDate()}
-                    </Text>
-                    {registro?.destacado && <View style={styles.puntoDestacado} />}
-                  </View>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-      ))}
+                      <Text
+                        style={[
+                          typography.footnote,
+                          styles.numero,
+                          registro && styles.numeroSobreColor,
+                          futuro && styles.numeroFuturo,
+                        ]}
+                      >
+                        {dia.getDate()}
+                      </Text>
+                      {registro?.destacado && <View style={styles.puntoDestacado} />}
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </Animated.View>
 
       <View style={styles.leyenda}>
         <Text style={[typography.micro, styles.textoLeyenda]}>{etiquetaMuyMal}</Text>

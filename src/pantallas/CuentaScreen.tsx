@@ -22,7 +22,8 @@ import { useTranslation } from '@/i18n';
 import { useSesionStore, useTagsActivos } from '@/stores/SesionStore';
 import { useIndicadoresProgreso, useListaRegistros } from '@/stores/RegistroStore';
 import { exportarCSV, exportarPDF } from '@/servicios/ExportService';
-import { BLOQUES, claveTraduccionBloque } from '@/datos/catalogoBloques';
+import { TextosInforme } from '@/servicios/InformeHistorial';
+import { BLOQUES, claveTraduccionBloque, claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
 import {
   calcularEdad,
   FRECUENCIAS_IA,
@@ -107,8 +108,18 @@ export const CuentaScreen: React.FC = () => {
       Alert.alert(t('account.exportData'), t('account.exportEmpty'));
       return;
     }
-    if (formato === 'csv') await exportarCSV(registros, tags);
-    else await exportarPDF(registros, usuario, tags);
+    const textos: TextosInforme = {
+      animo: (nivel) => t(`mood.${nivel}`),
+      clima: (clima) => t(`weather.${clima}`),
+      etiqueta: (clave) => t(claveTraduccionEtiqueta(clave)),
+      franja: (franja) => t(`stats.bucket.${franja}`).toLowerCase(),
+    };
+    try {
+      if (formato === 'csv') await exportarCSV(registros, tags, textos);
+      else await exportarPDF(registros, usuario, tags, textos);
+    } catch {
+      Alert.alert(t('account.exportData'), 'No se pudo armar el archivo. Probá de nuevo en un rato.');
+    }
   };
 
   // Apagarlo borra en el servidor lo que la IA ya leyó: se confirma. Prenderlo no

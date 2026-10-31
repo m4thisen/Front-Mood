@@ -14,7 +14,7 @@ import { claveTraduccionEtiqueta } from '@/datos/catalogoBloques';
 import { NIVELES_ANIMO, NivelAnimo } from '@/dominio';
 import { weekdayName } from '@/utils/fecha';
 import {
-  animoConEtiqueta,
+  animoSegunHabito,
   distribucion,
   FranjaHoraria,
   franjaHoraria,
@@ -47,20 +47,7 @@ export const EstadisticasScreen: React.FC = () => {
   const masMarcadas = useMemo(() => frecuencias(registros, 6), [registros]);
   const porNivel = useMemo(() => distribucion(registros), [registros]);
   const mejorDia = useMemo(() => mejorDiaSemana(registros), [registros]);
-  const segunHabito = useMemo(
-    () =>
-      masMarcadas
-        .map((f) => ({ clave: f.clave, comparacion: animoConEtiqueta(registros, f.clave) }))
-        .filter((x) => x.comparacion !== null)
-        .map((x) => ({
-          clave: x.clave,
-          dias: x.comparacion!.dias,
-          variacion: ((x.comparacion!.conEtiqueta - x.comparacion!.general) / x.comparacion!.general) * 100,
-        }))
-        .sort((a, b) => Math.abs(b.variacion) - Math.abs(a.variacion))
-        .slice(0, 5),
-    [masMarcadas, registros]
-  );
+  const segunHabito = useMemo(() => animoSegunHabito(registros, 5), [registros]);
 
   const total = registros.length;
 

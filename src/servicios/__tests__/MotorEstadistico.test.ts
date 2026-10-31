@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  animoSegunHabito,
   distribucion,
   franjaHoraria,
   frecuencias,
+  MINIMO_DIAS_HABITO,
   mejorDiaSemana,
   promedio,
 } from '../MotorEstadistico';
@@ -64,5 +66,34 @@ describe('MotorEstadistico', () => {
       { clave: 'ejercicio.corri', cantidad: 2 },
       { clave: 'gente.enFamilia', cantidad: 1 },
     ]);
+  });
+
+  describe('animoSegunHabito (CU-18)', () => {
+    // Corrió 3 días (ánimo 5) y vio a la familia 2 días; el promedio general es 3,4.
+    const registros = [
+      registro('2026-10-01', 5, { etiquetas: ['ejercicio.corri', 'emociones.alegria'] }),
+      registro('2026-10-02', 5, { etiquetas: ['ejercicio.corri', 'gente.enFamilia', 'emociones.alegria'] }),
+      registro('2026-10-03', 5, { etiquetas: ['ejercicio.corri', 'emociones.alegria'] }),
+      registro('2026-10-04', 1, { etiquetas: ['gente.enFamilia'] }),
+      registro('2026-10-05', 1),
+    ];
+
+    it(`compara el ánimo de esos días con el general, y muestra sobre cuántos días`, () => {
+      const [corri] = animoSegunHabito(registros);
+      expect(corri).toMatchObject({ clave: 'ejercicio.corri', dias: 3, conHabito: 5, general: 3.4 });
+      expect(corri!.variacion).toBeCloseTo(47.06, 1);
+    });
+
+    it(`RN-08: no muestra hábitos con menos de ${MINIMO_DIAS_HABITO} días`, () => {
+      expect(animoSegunHabito(registros).map((h) => h.clave)).not.toContain('gente.enFamilia');
+    });
+
+    it('las emociones no cuentan como hábitos: describen el ánimo', () => {
+      expect(animoSegunHabito(registros).map((h) => h.clave)).not.toContain('emociones.alegria');
+    });
+
+    it('sin registros no hay nada que comparar', () => {
+      expect(animoSegunHabito([])).toEqual([]);
+    });
   });
 });

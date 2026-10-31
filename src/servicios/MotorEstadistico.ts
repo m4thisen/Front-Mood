@@ -1,8 +1,8 @@
 /**
  * MotorEstadistico — «servicio» en el diagrama de clases de la aplicación
  * móvil. Calcula las estadísticas sobre el historial local, en el propio
- * dispositivo y sin conexión (CU-17). La relación entre hábitos y ánimo
- * (CU-18, con el umbral de RN-08) se completa en la iteración 4.
+ * dispositivo y sin conexión (CU-17), y la relación entre hábitos y ánimo
+ * (CU-18, con el umbral de RN-08).
  */
 import { getDay, parseISO } from 'date-fns';
 import { RegistroDiario } from '@/dominio';
@@ -75,15 +75,45 @@ export function frecuencias(registros: RegistroDiario[], limite = 5): Frecuencia
 }
 
 /**
- * Ánimo promedio de los días con una etiqueta frente al promedio general.
- * Versión provisoria que usan las devoluciones simuladas; la reemplaza
- * animoSegunHabito en la iteración 4.
+ * RN-08: un hábito se relaciona con el ánimo recién con este mínimo de días,
+ * el mismo que usa el núcleo de IA para contar un patrón. Con menos, sería
+ * afirmar algo de uno o dos días.
  */
-export function animoConEtiqueta(
-  registros: RegistroDiario[],
-  claveEtiqueta: string
-): { conEtiqueta: number; general: number; dias: number } | null {
-  const con = registros.filter((r) => r.etiquetas.includes(claveEtiqueta));
-  if (con.length === 0) return null;
-  return { conEtiqueta: promedio(con)!, general: promedio(registros)!, dias: con.length };
+export const MINIMO_DIAS_HABITO = 3;
+
+/** Las emociones describen el ánimo, no lo explican (como en el núcleo de IA). */
+const BLOQUE_EMOCIONES = 'emociones.';
+
+export interface AnimoSegunHabito {
+  clave: string;
+  dias: number;
+  /** Ánimo promedio de los días con el hábito. */
+  conHabito: number;
+  general: number;
+  /** Diferencia porcentual contra el promedio general. */
+  variacion: number;
+}
+
+/**
+ * CU-18: ánimo promedio de los días con cada etiqueta frente al promedio
+ * general. Descarta las que no llegan a MINIMO_DIAS_HABITO y ordena por
+ * impacto. Es correlación, no causa.
+ */
+export function animoSegunHabito(registros: RegistroDiario[], limite = 5): AnimoSegunHabito[] {
+  const general = promedio(registros);
+  if (general === null) return [];
+  const porEtiqueta = new Map<string, RegistroDiario[]>();
+  registros.forEach((r) =>
+    r.etiquetas
+      .filter((clave) => !clave.startsWith(BLOQUE_EMOCIONES))
+      .forEach((clave) => porEtiqueta.set(clave, [...(porEtiqueta.get(clave) ?? []), r]))
+  );
+  return Array.from(porEtiqueta)
+    .filter(([, dias]) => dias.length >= MINIMO_DIAS_HABITO)
+    .map(([clave, dias]) => {
+      const conHabito = promedio(dias)!;
+      return { clave, dias: dias.length, conHabito, general, variacion: ((conHabito - general) / general) * 100 };
+    })
+    .sort((a, b) => Math.abs(b.variacion) - Math.abs(a.variacion))
+    .slice(0, limite);
 }

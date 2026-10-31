@@ -67,6 +67,14 @@ src/
   de riesgo, en lugar de la devolución se muestra el mensaje de cuidado del
   servidor, con los teléfonos de ayuda para llamar con un toque. Cada cuánto
   llega la rápida se elige en Mi cuenta (1, 3, 7 o 14 días).
+- El historial completo se **exporta** desde Mi cuenta (CU-23), armado en el
+  teléfono y sin pasar por el servidor (`InformeHistorial`): en CSV, con los
+  nombres que ve la persona, y en PDF, como un informe para compartir con
+  un psicólogo/a (resumen, cómo se repartieron los días, el ánimo en el
+  tiempo, calendarios, los hábitos y el ánimo con la regla de RN-08, y cada
+  día con lo que se registró).
+- Las animaciones de entrada comparten estilo (`componentes/animaciones`) y
+  se saltean si el teléfono tiene activado "Reducir movimiento".
 - Los textos de la iteración 0 están en español e inglés (`src/i18n`); los
   nuevos se escriben directamente en español.
 
@@ -183,5 +191,9 @@ Construcción organizada en siete iteraciones (ver la tesis, Fase 3).
   teléfono; la canción del día se busca en Spotify (a través del servidor) y,
   si no se puede buscar, se guarda como se escribió; tocándola en el detalle
   del día se abre en Spotify. Pendiente: la prueba en un iPhone físico.
-- [ ] Iteración 6 — Portabilidad y terminación
+- [x] **Iteración 6 — Portabilidad y terminación**: historial en CSV legible
+  y en PDF como informe para un profesional, animaciones de entrada y la
+  regla de RN-08 (3 días) para relacionar hábitos y ánimo. La revisión de
+  traducciones quedó fuera: los textos nuevos van solo en español.
+  Pendiente: la prueba en un iPhone físico.
 
